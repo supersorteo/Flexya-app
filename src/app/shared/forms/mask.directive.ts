@@ -1,7 +1,16 @@
 import { Directive, ElementRef, inject, input } from '@angular/core';
 import { NgControl } from '@angular/forms';
 
-export type MaskTipo = 'phone' | 'dni' | 'pasaporte' | 'cuil' | 'calle' | 'altura' | 'piso';
+export type MaskTipo = 'phone' | 'dni' | 'pasaporte' | 'cuil' | 'calle' | 'altura' | 'piso' | 'peso' | 'medida' | 'precio' | 'cantidad';
+
+function decimal(raw: string, decimales: number, enteros: number): string {
+  const limpio = raw.replace(/[^\d.,]/g, '');
+  const i = limpio.search(/[.,]/);
+  if (i < 0) return limpio.slice(0, enteros);
+  const entera = limpio.slice(0, i).slice(0, enteros) || '0';
+  const fraccion = limpio.slice(i + 1).replace(/[.,]/g, '').slice(0, decimales);
+  return `${entera},${fraccion}`;
+}
 
 export function aplicarMascara(tipo: MaskTipo, raw: string): string {
   switch (tipo) {
@@ -17,6 +26,14 @@ export function aplicarMascara(tipo: MaskTipo, raw: string): string {
       return raw.replace(/\D/g, '').slice(0, 5);
     case 'piso':
       return raw.replace(/[^\p{L}\p{N} °º./-]/gu, '').replace(/^\s+/, '').slice(0, 12);
+    case 'cantidad':
+      return raw.replace(/\D/g, '').slice(0, 5);
+    case 'peso':
+      return decimal(raw, 3, 3);
+    case 'medida':
+      return decimal(raw, 1, 3);
+    case 'precio':
+      return decimal(raw, 2, 9);
     case 'cuil': {
       const d = raw.replace(/\D/g, '').slice(0, 11);
       return d.length <= 2 ? d : d.length <= 10 ? `${d.slice(0, 2)}-${d.slice(2)}` : `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}`;
@@ -24,7 +41,7 @@ export function aplicarMascara(tipo: MaskTipo, raw: string): string {
   }
 }
 
-export const MAX_MASCARA: Record<MaskTipo, number> = { phone: 10, dni: 8, pasaporte: 9, cuil: 13, calle: 60, altura: 5, piso: 12 };
+export const MAX_MASCARA: Record<MaskTipo, number> = { phone: 10, dni: 8, pasaporte: 9, cuil: 13, calle: 60, altura: 5, piso: 12, peso: 7, medida: 5, precio: 12, cantidad: 5 };
 
 @Directive({
   selector: 'input[fxMask]',

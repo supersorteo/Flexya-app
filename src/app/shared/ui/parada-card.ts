@@ -1,18 +1,19 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Envio } from '../../core/models';
-import { AccionesEnvio } from '../../core/services/envio-acciones';
+import { enCursoMensajero, Envio } from '../../core/models';
+import { AccionesMensajero } from './acciones-mensajero';
 import { DataService } from '../../core/services/data.service';
 import { mapaLink, telefonoLink, whatsappLink } from '../util/contacto';
 import { StatusPill } from './ui';
 
 @Component({
   selector: 'fx-parada',
-  imports: [RouterLink, StatusPill],
+  imports: [RouterLink, StatusPill, AccionesMensajero, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let e = envio();
-    <article class="fx-parada" [class.cerrada]="e.estado !== 'En reparto'">
+    <article class="fx-parada" [class.cerrada]="!activo()">
       <header class="fx-parada-head">
         <a class="fx-parada-id" [routerLink]="['/mensajero', 'envios', e.id]">{{ e.id }}</a>
         <fx-status [estado]="e.estado" />
@@ -27,6 +28,15 @@ import { StatusPill } from './ui';
         <i class="bi bi-shop" aria-hidden="true"></i><span>{{ data.nombreCliente(e.clienteId) }}</span>
         <i class="bi bi-clock ms-2" aria-hidden="true"></i><span>{{ e.eta }}</span>
       </p>
+      @if (e.estado === 'Incidencia') {
+        <p class="fx-parada-nota"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>Llevá el paquete al depósito para que lo reciban.</p>
+      }
+      @if (e.estado === 'En devolución') {
+        <p class="fx-parada-linea"><i class="bi bi-arrow-return-left" aria-hidden="true"></i><span>Devolver al cliente en: <strong>{{ data.domicilioCliente(e.clienteId) || 'su domicilio' }}</strong></span></p>
+      }
+      @if (e.estado === 'Retiro asignado') {
+        <p class="fx-parada-linea"><i class="bi bi-house-door" aria-hidden="true"></i><span>Retirar en: <strong>{{ e.origen || 'domicilio del cliente' }}</strong>@if (e.fechaRetiro) { · {{ e.fechaRetiro | date: 'dd/MM' }}{{ e.franja ? ' ' + (e.franja === 'manana' ? 'a la mañana' : 'a la tarde') : '' }} }@if (data.paquetesDelRetiro(e, 'Retiro asignado').length > 1) { · retiro de {{ data.paquetesDelRetiro(e, 'Retiro asignado').length }} paquetes }</span></p>
+      }
       @if (e.nota) {
         <p class="fx-parada-nota"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>{{ e.nota }}</p>
       }
@@ -44,19 +54,13 @@ import { StatusPill } from './ui';
         <a class="btn btn-outline-secondary" [href]="mapa()" target="_blank" rel="noopener" aria-label="Cómo llegar"><i class="bi bi-signpost-split"></i>Mapa</a>
       </div>
 
-      @if (e.estado === 'En reparto') {
-        <div class="fx-parada-acciones">
-          <button type="button" class="btn btn-outline-secondary" (click)="incidencia()"><i class="bi bi-exclamation-triangle"></i>Incidencia</button>
-          <button type="button" class="btn btn-primary" (click)="entregar()"><i class="bi bi-check2-circle"></i>Entregado</button>
-        </div>
-      }
+      <fx-acciones-mensajero [envio]="e" clase="fx-parada-acciones" />
       <a class="fx-parada-detalle" [routerLink]="['/mensajero', 'envios', e.id]">Ver detalle<i class="bi bi-chevron-right" aria-hidden="true"></i></a>
     </article>
   `,
 })
 export class ParadaCard {
   protected readonly data = inject(DataService);
-  private readonly acciones = inject(AccionesEnvio);
 
   readonly envio = input.required<Envio>();
   protected readonly tel = computed(() => telefonoLink(this.envio().telefono));
@@ -65,11 +69,5 @@ export class ParadaCard {
   );
   protected readonly mapa = computed(() => mapaLink(this.envio().direccion, this.envio().localidad));
 
-  protected entregar() {
-    void this.acciones.entregar(this.envio());
-  }
-
-  protected incidencia() {
-    void this.acciones.incidencia(this.envio());
-  }
+  protected readonly activo = computed(() => enCursoMensajero(this.envio()));
 }

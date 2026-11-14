@@ -1,14 +1,16 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { Cliente, direccionCompleta, identificacionCliente } from '../../core/models';
+import { Cliente, Usuario, direccionCompleta, identificacionCliente } from '../../core/models';
 import { DataService } from '../../core/services/data.service';
 import { AlertService } from '../../core/services/alert.service';
-import { PageHeader } from '../../shared/ui/ui';
+import { GestionCuentas } from '../../core/services/gestion-cuentas';
+import { CuentaEstado, PageHeader } from '../../shared/ui/ui';
 import { ClienteModal } from './cliente-modal';
 
 @Component({
   selector: 'fx-clientes',
-  imports: [PageHeader],
+  imports: [PageHeader, DatePipe, CuentaEstado],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <fx-page-header title="Clientes" subtitle="Dueños de los paquetes: alta, edición y baja de cuentas.">
@@ -25,7 +27,7 @@ import { ClienteModal } from './cliente-modal';
       <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Tabla de clientes">
         <table class="fx-table fx-table--filas">
           <thead>
-            <tr><th>Cliente</th><th>Tipo</th><th>Identificación</th><th>Teléfono</th><th>Plan</th><th>Envíos</th><th>Acciones</th></tr>
+            <tr><th>Cliente</th><th>Tipo</th><th>Identificación</th><th>Teléfono</th><th>Plan</th><th>Cuenta</th><th>Envíos</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             @for (c of filas(); track c.id) {
@@ -47,11 +49,35 @@ import { ClienteModal } from './cliente-modal';
                   @if (c.responsableNombre) { <span class="fx-sub">Resp.: {{ c.responsableNombre }}</span> }
                 </td>
                 <td data-label="Plan"><span class="fx-status st-route">{{ c.plan }}</span></td>
+                <td data-label="Cuenta">
+                  @if (c.usuario; as u) {
+                    <fx-cuenta-estado [estado]="u.estado" />
+                    @if (u.ultimoAcceso) { <span class="fx-sub">Último acceso {{ u.ultimoAcceso | date: 'd MMM, HH:mm' }}</span> }
+                  }
+                </td>
                 <td data-label="Envíos">{{ c.envios }} <span class="fx-muted">({{ c.activos }} activos)</span></td>
                 <td data-label="Acciones" class="fx-actions">
-                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="acceso(c)" [attr.aria-label]="'Generar nueva clave de ' + c.nombre" title="Generar nueva clave de acceso">
-                    <i class="bi bi-key"></i><span class="d-none d-xl-inline">Acceso</span>
-                  </button>
+                  @if (c.usuario; as u) {
+                    @if (u.estado === 'PENDIENTE') {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="invitar(c)" [attr.aria-label]="'Enviar invitación a ' + c.nombre" title="Enviar invitación a">
+                        <i class="bi bi-envelope-paper"></i><span class="d-none d-xl-inline">Invitación</span>
+                      </button>
+                    }
+                    @if (u.estado === 'ACTIVO') {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="enviarClave(c)" [attr.aria-label]="'Enviar enlace de nueva contraseña a ' + c.nombre" title="Enviar enlace de nueva contraseña a">
+                        <i class="bi bi-key"></i><span class="d-none d-xl-inline">Clave</span>
+                      </button>
+                    }
+                    @if (u.estado === 'SUSPENDIDO') {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="reactivar(c)" [attr.aria-label]="'Reactivar la cuenta de ' + c.nombre" title="Reactivar la cuenta de">
+                        <i class="bi bi-person-check"></i><span class="d-none d-xl-inline">Reactivar</span>
+                      </button>
+                    } @else {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="suspender(c)" [attr.aria-label]="'Suspender la cuenta de ' + c.nombre" title="Suspender la cuenta de">
+                        <i class="bi bi-slash-circle"></i><span class="d-none d-xl-inline">Suspender</span>
+                      </button>
+                    }
+                  }
                   <button type="button" class="btn btn-sm btn-outline-secondary" (click)="editar(c.id)" [attr.aria-label]="'Editar ' + c.nombre" title="Editar cliente">
                     <i class="bi bi-pencil"></i><span class="d-none d-xl-inline">Editar</span>
                   </button>
@@ -77,6 +103,7 @@ export class Clientes {
   protected readonly data = inject(DataService);
   private readonly alert = inject(AlertService);
   private readonly modals = inject(NgbModal);
+  private readonly cuentas = inject(GestionCuentas);
 
   protected readonly direccionCompleta = direccionCompleta;
   protected readonly q = signal('');
@@ -87,7 +114,7 @@ export class Clientes {
       .clientes()
       .map((c) => {
         const envios = this.data.envios().filter((e) => e.clienteId === c.id);
-        return { ...c, envios: envios.length, activos: envios.filter((e) => !['Entregado', 'Cancelado'].includes(e.estado)).length };
+        return { ...c, usuario: this.cuentas.usuarioDe({ clienteId: c.id }), envios: envios.length, activos: envios.filter((e) => !['Entregado', 'Cancelado'].includes(e.estado)).length };
       })
       .filter(
         (c) =>
@@ -124,32 +151,40 @@ export class Clientes {
           this.data.actualizarCliente(cliente.id, input);
           this.alert.exito(`Cliente ${input.nombre} actualizado`);
         } else {
-          const { cliente: nuevo, clave } = this.data.agregarCliente(input);
-          this.mostrarAcceso(nuevo.nombre, nuevo.email, clave, 'Cliente creado');
+          const { cliente: nuevo, usuario } = this.data.agregarCliente(input);
+          void this.cuentas.invitar(usuario, nuevo.nombre, 'Cliente creado');
         }
       },
       () => undefined,
     );
   }
 
-  protected acceso(c: Cliente) {
-    const r = this.data.regenerarClave(c.id);
-    if (r) this.mostrarAcceso(c.nombre, r.email, r.clave, 'Nueva clave de acceso');
+  protected invitar(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.invitar(x.usuario, x.nombre);
   }
 
-  private mostrarAcceso(nombre: string, email: string, clave: string, titulo: string) {
-    void this.alert.credenciales({ titulo, nombre, email, clave });
+  protected enviarClave(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.enviarClave(x.usuario, x.nombre);
+  }
+
+  protected suspender(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.suspender(x.usuario, x.nombre);
+  }
+
+  protected reactivar(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.reactivar(x.usuario, x.nombre);
   }
 
   protected async eliminar(c: Cliente) {
-    const motivo = this.data.motivoNoEliminable(c.id);
-    if (motivo) {
-      this.alert.advertencia(`No se puede eliminar a ${c.nombre}. ${motivo}`);
+    const bloqueo = this.data.motivoClienteNoEliminable(c.id);
+    if (bloqueo) {
+      this.alert.advertencia(`No se puede eliminar a ${c.nombre}. ${bloqueo}`);
       return;
     }
+    const r = this.data.resumenCliente(c.id);
     const confirmado = await this.alert.confirmar({
       titulo: `¿Eliminar a ${c.nombre}?`,
-      mensaje: 'Esta acción no se puede deshacer. Su historial de envíos se conserva y se elimina su acceso.',
+      mensaje: `Se borra todo lo suyo de forma definitiva: ${r.productos} producto(s), ${r.envios} envío(s) (${r.enCurso} en curso, ${r.borradores} borrador(es)), ${r.movimientos} movimiento(s) de stock y su acceso a la app.${r.enCurso ? ' Atención: tiene envíos en curso.' : ''} Esta acción no se puede deshacer.`,
       confirmar: 'Sí, eliminar',
       tipo: 'peligro',
     });

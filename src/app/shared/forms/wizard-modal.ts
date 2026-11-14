@@ -32,7 +32,7 @@ export abstract class WizardModal {
   }
 
   protected pasoValido(i: number): boolean {
-    this.pasos[i].campos.forEach((n) => this.form.get(n)?.markAsTouched());
+    this.pasos[i].campos.forEach((n) => this.form.get(n)?.markAllAsTouched());
     return this.pasos[i].campos.every((n) => {
       const c = this.form.get(n);
       return !c || c.disabled || c.valid;
@@ -90,6 +90,7 @@ export abstract class WizardModal {
     const c = this.form.get(name);
     if (!c || !c.invalid || !(c.touched || c.dirty)) return '';
     const key = Object.keys(c.errors ?? {})[0];
+    if (!key) return '';
     return this.mensajes[name]?.[key] ?? 'Valor inválido.';
   }
 }

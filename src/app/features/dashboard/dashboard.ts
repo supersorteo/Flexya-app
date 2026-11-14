@@ -1,8 +1,10 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { enCursoMensajero } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
+import { CrearEnvio } from '../envios/crear-envio';
 import { EnviosTable } from '../../shared/ui/envios-table';
 import { ParadaCard } from '../../shared/ui/parada-card';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
@@ -22,7 +24,7 @@ interface Kpi {
   template: `
     <fx-page-header [eyebrow]="eyebrow()" [title]="titulo()" [subtitle]="subtitulo()">
       @if (user()?.rol === 'cliente') {
-        <a class="btn btn-primary" routerLink="/cliente/envios/nuevo"><i class="bi bi-plus-lg"></i>Nuevo envío</a>
+        <button type="button" class="btn btn-primary" (click)="nuevoEnvio()"><i class="bi bi-plus-lg"></i>Nuevo envío</button>
       }
     </fx-page-header>
 
@@ -93,6 +95,7 @@ interface Kpi {
 export class Dashboard {
   private readonly auth = inject(AuthService);
   protected readonly data = inject(DataService);
+  private readonly crear = inject(CrearEnvio);
   private readonly currency = new CurrencyPipe('es-AR');
 
   protected readonly user = this.auth.user;
@@ -100,7 +103,7 @@ export class Dashboard {
   protected readonly recientes = computed(() => {
     const lista = this.envios();
     return this.user()?.rol === 'mensajero'
-      ? [...lista].sort((a, b) => Number(b.estado === 'En reparto') - Number(a.estado === 'En reparto')).slice(0, 5)
+      ? [...lista].sort((a, b) => Number(enCursoMensajero(b)) - Number(enCursoMensajero(a))).slice(0, 5)
       : lista.slice(0, 5);
   });
   protected readonly actividades = computed(() => {
@@ -110,6 +113,10 @@ export class Dashboard {
     const nombre = this.data.nombreCliente(u.clienteId ?? '');
     return all.filter((a) => a.detalle.includes(nombre) || /Envío|entreg/i.test(a.titulo)).slice(0, 6);
   });
+
+  protected nuevoEnvio() {
+    this.crear.abrir();
+  }
 
   protected readonly eyebrow = computed(
     () => ({ admin: 'OPERACIONES · HOY', cliente: 'CUENTA', mensajero: 'JORNADA · HOY' })[this.user()?.rol ?? 'cliente'],
@@ -132,30 +139,35 @@ export class Dashboard {
   protected readonly kpis = computed<Kpi[]>(() => {
     const e = this.envios();
     const count = (estado: string) => e.filter((x) => x.estado === estado).length;
-    const stock = this.data.lotesDe(this.user()).reduce((s, l) => s + l.unidades, 0);
+    const enDeposito = e.filter((x) => x.estado === 'En depósito');
+    const unidadesEnDeposito = enDeposito.reduce((s, x) => s + x.items.reduce((n, i) => n + i.cantidad, 0), 0);
+    const stock = this.data.productosDe(this.user()).reduce((s, p) => s + p.stock, 0);
     const rol = this.user()?.rol;
     if (rol === 'admin') {
       return [
-        { label: 'Por recepcionar', value: count('Pendiente'), foot: 'esperan llegar al depósito', icon: 'inbox', tone: 'amber' },
-        { label: 'En depósito', value: count('En depósito'), foot: 'listos para asignar', icon: 'building', tone: 'purple' },
-        { label: 'En reparto', value: count('En reparto'), foot: 'con mensajeros', icon: 'truck', tone: 'blue' },
-        { label: 'Stock total', value: stock, foot: 'unidades almacenadas', icon: 'boxes', tone: 'teal' },
+        { label: 'Por recepcionar', value: e.filter((x) => x.estado === 'Pendiente' && x.retiro === 'deposito').length, foot: 'esperan llegar al depósito', icon: 'inbox', tone: 'amber' },
+        { label: 'Por asignar', value: enDeposito.length + e.filter((x) => x.estado === 'Pendiente' && x.retiro === 'domicilio').length, foot: 'en depósito o directos', icon: 'building', tone: 'purple' },
+        { label: 'Con mensajeros', value: e.filter((x) => enCursoMensajero(x)).length, foot: 'retiro o reparto en curso', icon: 'truck', tone: 'blue' },
+        { label: 'Unidades en depósito', value: unidadesEnDeposito, foot: 'de paquetes recibidos', icon: 'boxes', tone: 'teal' },
+        { label: 'Casos abiertos', value: e.filter((x) => ['Incidencia', 'En revisión', 'Retiro fallido'].includes(x.estado) || (x.estado === 'En devolución' && !x.mensajeroId)).length, foot: 'requieren una decisión', icon: 'exclamation-diamond', tone: 'amber' },
       ];
     }
     if (rol === 'mensajero') {
-      const total = e.filter((x) => x.estado === 'En reparto').reduce((s, x) => s + x.importe, 0);
+      const g = this.data.gananciasDe(this.user()?.mensajeroId ?? '');
+      const pesos = (n: number) => this.currency.transform(n, 'ARS', 'symbol-narrow', '1.0-2') ?? '';
       return [
-        { label: 'Paradas pendientes', value: count('En reparto'), foot: 'por entregar hoy', icon: 'geo-alt', tone: 'blue' },
+        { label: 'Paradas en curso', value: e.filter((x) => enCursoMensajero(x)).length, foot: 'retiros y entregas de hoy', icon: 'geo-alt', tone: 'blue' },
         { label: 'Entregados', value: count('Entregado'), foot: 'completados', icon: 'check2-circle', tone: 'teal' },
         { label: 'Incidencias', value: count('Incidencia'), foot: 'con seguimiento', icon: 'exclamation-triangle', tone: 'amber' },
-        { label: 'En ruta', value: this.currency.transform(total, 'ARS', 'symbol-narrow', '1.0-0') ?? '', foot: 'valor de la carga', icon: 'cash-coin', tone: 'purple' },
+        { label: 'Ganado esta semana', value: pesos(g.semana), foot: `${pesos(g.hoy)} hoy`, icon: 'cash-coin', tone: 'purple' },
+        { label: 'A cobrar', value: pesos(g.pendiente), foot: `${pesos(g.cobrado)} ya cobrado`, icon: 'wallet2', tone: 'teal' },
       ];
     }
     return [
-      { label: 'Envíos activos', value: e.filter((x) => !['Entregado', 'Cancelado'].includes(x.estado)).length, foot: `${count('En reparto')} en reparto`, icon: 'box-seam', tone: 'blue' },
+      { label: 'Envíos activos', value: e.filter((x) => !['Entregado', 'Cancelado', 'Borrador', 'Devuelto'].includes(x.estado)).length, foot: `${count('En reparto')} en reparto`, icon: 'box-seam', tone: 'blue' },
       { label: 'Entregados', value: count('Entregado'), foot: 'completados', icon: 'check2-circle', tone: 'teal' },
-      { label: 'Stock en depósito', value: stock, foot: 'unidades disponibles', icon: 'building', tone: 'purple' },
-      { label: 'Retiros pendientes', value: this.data.retirosDe(this.user()).filter((r) => r.estado === 'Pendiente').length, foot: 'en revisión', icon: 'arrow-up-right', tone: 'amber' },
+      { label: 'Stock de productos', value: stock, foot: 'unidades disponibles', icon: 'boxes', tone: 'purple' },
+      { label: 'En depósito', value: count('En depósito'), foot: 'paquetes recibidos', icon: 'building', tone: 'amber' },
     ];
   });
 }

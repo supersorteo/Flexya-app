@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { EstadoEnvio } from '../../core/models';
+import { EstadoCuenta, EstadoEnvio } from '../../core/models';
 
 @Component({
   selector: 'fx-kpi',
@@ -28,6 +28,13 @@ const ESTADO_CLASE: Record<EstadoEnvio, string> = {
   'En reparto': 'st-route',
   Pendiente: 'st-pending',
   'En depósito': 'st-deposit',
+  'En devolución': 'st-pending',
+  Devuelto: 'st-delivered',
+  Borrador: 'st-pending',
+  'Retiro asignado': 'st-route',
+  Retirado: 'st-route',
+  'Retiro fallido': 'st-incident',
+  'En revisión': 'st-pending',
   Incidencia: 'st-incident',
   Cancelado: 'st-incident',
 };
@@ -64,4 +71,20 @@ export class PageHeader {
   readonly title = input.required<string>();
   readonly subtitle = input('');
   readonly eyebrow = input('');
+}
+
+const CUENTA: Record<EstadoCuenta, { etiqueta: string; clase: string }> = {
+  PENDIENTE: { etiqueta: 'Pendiente', clase: 'st-pending' },
+  ACTIVO: { etiqueta: 'Activa', clase: 'st-delivered' },
+  SUSPENDIDO: { etiqueta: 'Suspendida', clase: 'st-incident' },
+};
+
+@Component({
+  selector: 'fx-cuenta-estado',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<span [class]="'fx-status ' + datos().clase">{{ datos().etiqueta }}</span>`,
+})
+export class CuentaEstado {
+  readonly estado = input.required<EstadoCuenta>();
+  protected readonly datos = computed(() => CUENTA[this.estado()]);
 }

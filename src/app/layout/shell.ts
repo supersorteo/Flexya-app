@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Rol } from '../core/models';
 import { AuthService } from '../core/services/auth.service';
@@ -18,17 +18,20 @@ const NAV: Record<Rol, NavItem[]> = {
     { path: 'deposito', label: 'Depósito', icon: 'building' },
     { path: 'clientes', label: 'Clientes', icon: 'people' },
     { path: 'mensajeros', label: 'Mensajeros', icon: 'truck' },
+    { path: 'pagos', label: 'Pagos', icon: 'cash-coin' },
     { path: 'reportes', label: 'Reportes', icon: 'bar-chart' },
   ],
   cliente: [
     { path: 'inicio', label: 'Resumen', icon: 'grid-1x2' },
-    { path: 'envios', label: 'Mis envíos', icon: 'box-seam' },
+    { path: 'productos', label: 'Productos', icon: 'box' },
+    { path: 'envios', label: 'Mis envíos', icon: 'truck' },
     { path: 'deposito', label: 'Mi depósito', icon: 'building' },
     { path: 'historial', label: 'Historial', icon: 'clock-history' },
   ],
   mensajero: [
     { path: 'inicio', label: 'Mi jornada', icon: 'grid-1x2' },
     { path: 'envios', label: 'Mis envíos', icon: 'truck' },
+    { path: 'ganancias', label: 'Ganancias', icon: 'cash-coin' },
     { path: 'historial', label: 'Historial', icon: 'clock-history' },
   ],
 };
@@ -57,6 +60,9 @@ const ROL_LABEL: Record<Rol, string> = {
               <i [class]="'bi bi-' + n.icon" aria-hidden="true"></i>{{ n.label }}
             </a>
           }
+          <a [routerLink]="['/', rol(), 'cuenta']" routerLinkActive="active">
+            <i class="bi bi-person-gear" aria-hidden="true"></i>Mi cuenta
+          </a>
         </nav>
         @if (rol() === 'admin') {
           <div class="mt-auto px-2">
@@ -81,7 +87,7 @@ const ROL_LABEL: Record<Rol, string> = {
             @if (rol() === 'admin') {
               <button type="button" class="btn btn-outline-secondary btn-sm d-lg-none" (click)="reset()" aria-label="Borrar todos los datos"><i class="bi bi-trash3"></i></button>
             }
-            <span class="fx-avatar" aria-hidden="true">{{ iniciales() }}</span>
+            <a class="fx-avatar" [routerLink]="['/', rol(), 'cuenta']" aria-label="Mi cuenta" title="Mi cuenta">{{ iniciales() }}</a>
             <button type="button" class="btn btn-outline-secondary btn-sm" (click)="logout()" aria-label="Cerrar sesión">
               <i class="bi bi-box-arrow-right"></i><span class="d-none d-md-inline">Salir</span>
             </button>
@@ -118,6 +124,12 @@ export class Shell {
       .join('')
       .toUpperCase(),
   );
+
+  constructor() {
+    effect(() => {
+      if (!this.auth.user()) void this.router.navigate(['/login']);
+    });
+  }
 
   protected logout() {
     this.auth.logout();

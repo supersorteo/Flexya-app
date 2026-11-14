@@ -1,15 +1,16 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { Mensajero, ZONAS } from '../../core/models';
+import { enCursoMensajero, Mensajero, Usuario, ZONAS } from '../../core/models';
 import { AlertService } from '../../core/services/alert.service';
 import { DataService } from '../../core/services/data.service';
-import { PageHeader } from '../../shared/ui/ui';
+import { GestionCuentas } from '../../core/services/gestion-cuentas';
+import { CuentaEstado, PageHeader } from '../../shared/ui/ui';
 import { MensajeroModal } from './mensajero-modal';
 
 @Component({
   selector: 'fx-mensajeros',
-  imports: [PageHeader, CurrencyPipe],
+  imports: [PageHeader, CurrencyPipe, DatePipe, CuentaEstado],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <fx-page-header title="Mensajeros y zonas" subtitle="Quién reparte en cada zona y cómo viene su jornada.">
@@ -26,7 +27,7 @@ import { MensajeroModal } from './mensajero-modal';
       <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Tabla de mensajeros">
         <table class="fx-table fx-table--filas">
           <thead>
-            <tr><th>Mensajero</th><th>Documento</th><th>Teléfono</th><th>Emergencia</th><th>Zona</th><th>En reparto</th><th>Entregados</th><th>Incidencias</th><th>Acciones</th></tr>
+            <tr><th>Mensajero</th><th>Documento</th><th>Teléfono</th><th>Emergencia</th><th>Zona</th><th>Cuenta</th><th>En curso</th><th>Entregados</th><th>Incidencias</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             @for (m of filas(); track m.id) {
@@ -39,13 +40,37 @@ import { MensajeroModal } from './mensajero-modal';
                 <td data-label="Teléfono">{{ m.telefono }}</td>
                 <td data-label="Emergencia">{{ m.telefonoEmergencia || '—' }}</td>
                 <td data-label="Zona"><span class="fx-status st-deposit">{{ data.nombreZona(m.zonaId) }}</span></td>
-                <td data-label="En reparto">{{ m.enReparto }}</td>
+                <td data-label="Cuenta">
+                  @if (m.usuario; as u) {
+                    <fx-cuenta-estado [estado]="u.estado" />
+                    @if (u.ultimoAcceso) { <span class="fx-sub">Último acceso {{ u.ultimoAcceso | date: 'd MMM, HH:mm' }}</span> }
+                  }
+                </td>
+                <td data-label="En curso">{{ m.enReparto }}</td>
                 <td data-label="Entregados">{{ m.entregados }}</td>
                 <td data-label="Incidencias">{{ m.incidencias }}</td>
                 <td data-label="Acciones" class="fx-actions">
-                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="acceso(m)" [attr.aria-label]="'Generar nueva clave de ' + m.nombre" title="Generar nueva clave de acceso">
-                    <i class="bi bi-key"></i><span class="d-none d-xl-inline">Acceso</span>
-                  </button>
+                  @if (m.usuario; as u) {
+                    @if (u.estado === 'PENDIENTE') {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="invitar(m)" [attr.aria-label]="'Enviar invitación a ' + m.nombre" title="Enviar invitación a">
+                        <i class="bi bi-envelope-paper"></i><span class="d-none d-xl-inline">Invitación</span>
+                      </button>
+                    }
+                    @if (u.estado === 'ACTIVO') {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="enviarClave(m)" [attr.aria-label]="'Enviar enlace de nueva contraseña a ' + m.nombre" title="Enviar enlace de nueva contraseña a">
+                        <i class="bi bi-key"></i><span class="d-none d-xl-inline">Clave</span>
+                      </button>
+                    }
+                    @if (u.estado === 'SUSPENDIDO') {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="reactivar(m)" [attr.aria-label]="'Reactivar la cuenta de ' + m.nombre" title="Reactivar la cuenta de">
+                        <i class="bi bi-person-check"></i><span class="d-none d-xl-inline">Reactivar</span>
+                      </button>
+                    } @else {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="suspender(m)" [attr.aria-label]="'Suspender la cuenta de ' + m.nombre" title="Suspender la cuenta de">
+                        <i class="bi bi-slash-circle"></i><span class="d-none d-xl-inline">Suspender</span>
+                      </button>
+                    }
+                  }
                   <button type="button" class="btn btn-sm btn-outline-secondary" (click)="editar(m.id)" [attr.aria-label]="'Editar ' + m.nombre" title="Editar mensajero">
                     <i class="bi bi-pencil"></i><span class="d-none d-xl-inline">Editar</span>
                   </button>
@@ -89,6 +114,7 @@ export class Mensajeros {
   protected readonly data = inject(DataService);
   private readonly alert = inject(AlertService);
   private readonly modals = inject(NgbModal);
+  private readonly cuentas = inject(GestionCuentas);
 
   protected readonly q = signal('');
 
@@ -99,7 +125,7 @@ export class Mensajeros {
       .map((m) => {
         const envios = this.data.envios().filter((e) => e.mensajeroId === m.id);
         const n = (estado: string) => envios.filter((e) => e.estado === estado).length;
-        return { ...m, enReparto: n('En reparto'), entregados: n('Entregado'), incidencias: n('Incidencia') };
+        return { ...m, usuario: this.cuentas.usuarioDe({ mensajeroId: m.id }), enReparto: envios.filter((e) => enCursoMensajero(e)).length, entregados: n('Entregado'), incidencias: n('Incidencia') };
       })
       .filter(
         (m) =>
@@ -146,21 +172,28 @@ export class Mensajeros {
           this.data.actualizarMensajero(mensajero.id, input);
           this.alert.exito(`Mensajero ${input.nombre} actualizado`);
         } else {
-          const { mensajero: nuevo, clave } = this.data.agregarMensajero(input);
-          this.mostrarAcceso(nuevo.nombre, nuevo.email, clave, 'Mensajero creado');
+          const { mensajero: nuevo, usuario } = this.data.agregarMensajero(input);
+          void this.cuentas.invitar(usuario, nuevo.nombre, 'Mensajero creado');
         }
       },
       () => undefined,
     );
   }
 
-  protected acceso(m: Mensajero) {
-    const r = this.data.regenerarClaveMensajero(m.id);
-    if (r) this.mostrarAcceso(m.nombre, r.email, r.clave, 'Nueva clave de acceso');
+  protected invitar(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.invitar(x.usuario, x.nombre);
   }
 
-  private mostrarAcceso(nombre: string, email: string, clave: string, titulo: string) {
-    void this.alert.credenciales({ titulo, nombre, email, clave });
+  protected enviarClave(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.enviarClave(x.usuario, x.nombre);
+  }
+
+  protected suspender(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.suspender(x.usuario, x.nombre);
+  }
+
+  protected reactivar(x: { nombre: string; usuario?: Usuario }) {
+    if (x.usuario) void this.cuentas.reactivar(x.usuario, x.nombre);
   }
 
   protected async eliminar(m: Mensajero) {
@@ -171,7 +204,7 @@ export class Mensajeros {
     }
     const confirmado = await this.alert.confirmar({
       titulo: `¿Eliminar a ${m.nombre}?`,
-      mensaje: 'Esta acción no se puede deshacer. Su historial de entregas se conserva y se elimina su acceso.',
+      mensaje: `Se elimina su acceso a la app. Sus ${this.data.resumenMensajero(m.id).cerrados} envío(s) cerrados se conservan sin mensajero asignado. Esta acción no se puede deshacer.`,
       confirmar: 'Sí, eliminar',
       tipo: 'peligro',
     });

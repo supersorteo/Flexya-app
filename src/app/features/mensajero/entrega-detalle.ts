@@ -1,15 +1,16 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { resumenItems } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
-import { AccionesEnvio } from '../../core/services/envio-acciones';
+import { AccionesMensajero } from '../../shared/ui/acciones-mensajero';
 import { mapaLink, telefonoLink, whatsappLink } from '../../shared/util/contacto';
 import { StatusPill } from '../../shared/ui/ui';
 
 @Component({
   selector: 'fx-entrega-detalle',
-  imports: [RouterLink, StatusPill, CurrencyPipe, DatePipe],
+  imports: [RouterLink, StatusPill, CurrencyPipe, DatePipe, AccionesMensajero],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a class="fx-back" routerLink="/mensajero/envios"><i class="bi bi-arrow-left" aria-hidden="true"></i>Mis envíos</a>
@@ -67,19 +68,34 @@ import { StatusPill } from '../../shared/ui/ui';
           <h2 class="fx-detalle-titulo">Envío</h2>
           <dl class="fx-datos">
             <div><dt>Remitente</dt><dd>{{ data.nombreCliente(e.clienteId) }}</dd></div>
+            @if (e.retiro === 'domicilio') {
+              <div><dt>Retirar en</dt><dd>{{ e.origen || 'Domicilio del cliente' }}</dd></div>
+              @if (e.fechaRetiro) {
+                <div><dt>Retiro</dt><dd>{{ e.fechaRetiro | date: 'EEE d MMM y' }}{{ e.franja ? ' · ' + (e.franja === 'manana' ? 'mañana' : 'tarde') : '' }}</dd></div>
+              }
+            }
             <div><dt>Importe</dt><dd>{{ e.importe | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</dd></div>
             <div><dt>Creado</dt><dd>{{ e.creadoEn | date: 'd MMM, HH:mm' }}</dd></div>
             <div><dt>Horario</dt><dd>{{ e.eta }}</dd></div>
           </dl>
         </section>
+
+        @if (e.items?.length) {
+          <section class="fx-panel fx-detalle-card">
+            <h2 class="fx-detalle-titulo">Contenido</h2>
+            <ul class="fx-contenido">
+              @for (it of e.items; track it.productoId) {
+                <li><strong>{{ it.cantidad }} ×</strong> {{ it.nombre }}</li>
+              }
+            </ul>
+            @if (resumen().peso !== null) {
+              <p class="fx-muted small mb-0">Peso total: {{ resumen().peso }} kg{{ resumen().completo ? '' : ' (faltan datos de algún producto)' }}</p>
+            }
+          </section>
+        }
       </div>
 
-      @if (e.estado === 'En reparto') {
-        <div class="fx-barra-acciones">
-          <button type="button" class="btn btn-outline-secondary" (click)="incidencia()"><i class="bi bi-exclamation-triangle"></i>Incidencia</button>
-          <button type="button" class="btn btn-primary" (click)="entregar()"><i class="bi bi-check2-circle"></i>Marcar entregado</button>
-        </div>
-      }
+      <fx-acciones-mensajero [envio]="e" clase="fx-barra-acciones" />
     } @else {
       <div class="fx-panel text-center fx-muted py-5 px-3 mt-3">
         <i class="bi bi-search fs-2 d-block mb-2"></i>
@@ -91,10 +107,10 @@ import { StatusPill } from '../../shared/ui/ui';
 export class EntregaDetalle {
   protected readonly data = inject(DataService);
   private readonly auth = inject(AuthService);
-  private readonly acciones = inject(AccionesEnvio);
 
   readonly id = input.required<string>();
   protected readonly envio = computed(() => this.data.enviosDe(this.auth.user()).find((e) => e.id === this.id()) ?? null);
+  protected readonly resumen = computed(() => resumenItems(this.envio()?.items ?? []));
   protected readonly tel = computed(() => (this.envio() ? telefonoLink(this.envio()!.telefono) : null));
   protected readonly wa = computed(() => {
     const e = this.envio();
@@ -104,14 +120,4 @@ export class EntregaDetalle {
     const e = this.envio();
     return e ? mapaLink(e.direccion, e.localidad) : '';
   });
-
-  protected entregar() {
-    const e = this.envio();
-    if (e) void this.acciones.entregar(e);
-  }
-
-  protected incidencia() {
-    const e = this.envio();
-    if (e) void this.acciones.incidencia(e);
-  }
 }

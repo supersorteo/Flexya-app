@@ -24,7 +24,7 @@ describe('Pantallas del mensajero', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
   });
 
-  function escenario() {
+  async function escenario() {
     const data = TestBed.inject(DataService);
     const { cliente: c } = data.agregarCliente(cliente);
     const santiago = data.agregarMensajero(mensajero);
@@ -39,12 +39,15 @@ describe('Pantallas del mensajero', () => {
     const bruno = nuevo('Bruno Díaz', santiago.mensajero.id);
     const carla = nuevo('Carla Ruiz', micaela.mensajero.id);
     data.entregar(bruno.id, 'Portería');
-    TestBed.inject(AuthService).login('santiago@flexya.com', santiago.clave);
+    const auth = TestBed.inject(AuthService);
+    const emision = await auth.invitar(santiago.usuario.id);
+    await auth.activar(emision!.enlace.split('/').pop()!, 'Clave12345');
+    await auth.login('santiago@flexya.com', 'Clave12345');
     return { ana, bruno, carla };
   }
 
-  it('Mis envíos muestra solo las paradas propias, separadas en por entregar y cerradas', () => {
-    escenario();
+  it('Mis envíos muestra solo las paradas propias, separadas en por entregar y cerradas', async () => {
+    await escenario();
     const fixture = TestBed.createComponent(MisParadas);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
@@ -60,8 +63,8 @@ describe('Pantallas del mensajero', () => {
     expect(el.textContent).toContain('Recibió: Portería');
   });
 
-  it('cada parada trae llamar, WhatsApp y mapa, y las acciones solo si está en reparto', () => {
-    const { ana } = escenario();
+  it('cada parada trae llamar, WhatsApp y mapa, y las acciones solo si está en reparto', async () => {
+    const { ana } = await escenario();
     const fixture = TestBed.createComponent(MisParadas);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
@@ -73,8 +76,8 @@ describe('Pantallas del mensajero', () => {
     expect(el.textContent).toContain(ana.id);
   });
 
-  it('el detalle muestra las acciones de un envío en reparto', () => {
-    const { ana } = escenario();
+  it('el detalle muestra las acciones de un envío en reparto', async () => {
+    const { ana } = await escenario();
     const fixture = TestBed.createComponent(EntregaDetalle);
     fixture.componentRef.setInput('id', ana.id);
     fixture.detectChanges();
@@ -85,8 +88,8 @@ describe('Pantallas del mensajero', () => {
     expect(texto).toContain('Cómo llegar');
   });
 
-  it('el detalle de un envío entregado muestra quién recibió y no ofrece acciones', () => {
-    const { bruno } = escenario();
+  it('el detalle de un envío entregado muestra quién recibió y no ofrece acciones', async () => {
+    const { bruno } = await escenario();
     const fixture = TestBed.createComponent(EntregaDetalle);
     fixture.componentRef.setInput('id', bruno.id);
     fixture.detectChanges();
@@ -95,8 +98,30 @@ describe('Pantallas del mensajero', () => {
     expect(el.querySelector('.fx-barra-acciones')).toBeNull();
   });
 
-  it('el detalle de un envío ajeno no se muestra', () => {
-    const { carla } = escenario();
+  it('el detalle muestra qué productos lleva el envío y el peso total', async () => {
+    await escenario();
+    const data = TestBed.inject(DataService);
+    const clienteId = data.clientes()[0].id;
+    const taza = data.agregarProducto(clienteId, { stock: 100, nombre: 'Taza', descripcion: '', precio: null, peso: 0.3, alto: null, ancho: null, largo: null });
+    const envio = data.crearEnvio(
+      { destinatario: 'Dora Paz', telefono: '11 5555 0000', direccion: 'Av. Cabildo 1840', localidad: 'Belgrano', items: [{ productoId: taza.id, cantidad: 4 }] },
+      clienteId,
+    );
+    data.recepcionar(envio.id);
+    data.asignar(envio.id, data.mensajeros()[0].id);
+
+    const fixture = TestBed.createComponent(EntregaDetalle);
+    fixture.componentRef.setInput('id', envio.id);
+    fixture.detectChanges();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Contenido');
+    expect(texto).toContain('4 ×');
+    expect(texto).toContain('Taza');
+    expect(texto).toContain('Peso total: 1.2 kg');
+  });
+
+  it('el detalle de un envío ajeno no se muestra', async () => {
+    const { carla } = await escenario();
     const fixture = TestBed.createComponent(EntregaDetalle);
     fixture.componentRef.setInput('id', carla.id);
     fixture.detectChanges();

@@ -67,6 +67,7 @@ describe('MensajeroModal', () => {
 
   it('detecta documento de otro mensajero y correos ya usados, sin marcar los propios', () => {
     const { data, modal } = abrir();
+    data.crearSuperadmin('Admin Test', 'admin@flexya.com', 'hash', 'sal');
     data.agregarMensajero({ ...base, nombre: 'Micaela Roldán', numeroDocumento: '30211876', email: 'micaela@flexya.com', zonaId: 'caba-centro' });
     expect(modal.form.controls['numeroDocumento'].errors).toBeNull();
     modal.form.patchValue({ numeroDocumento: '30211876', email: 'micaela@flexya.com' });

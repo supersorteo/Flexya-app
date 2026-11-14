@@ -2,8 +2,16 @@ import { DB } from '../models';
 
 export function createSeed(): DB {
   return {
-    usuarios: [{ id: 'u1', nombre: 'Superadministrador', email: 'admin@flexya.com', password: '123456', rol: 'admin' }],
+    usuarios: [],
+    tokens: [],
+    correos: [],
     clientes: [],
+    productos: [],
+    movimientos: [],
+    configOperacion: [],
+    comisiones: [],
+    liquidaciones: [],
+    configPagos: [],
     mensajeros: [],
     envios: [],
     lotes: [],

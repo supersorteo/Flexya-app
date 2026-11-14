@@ -177,6 +177,7 @@ describe('ClienteModal reutilizado para editar', () => {
   });
 
   it('el correo del superadmin no se puede usar para un cliente', () => {
+    TestBed.inject(DataService).crearSuperadmin('Admin Test', 'admin@flexya.com', 'hash', 'sal');
     const fixture = TestBed.createComponent(ClienteModal);
     fixture.detectChanges();
     const modal = fixture.componentInstance as unknown as Interno;

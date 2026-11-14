@@ -49,11 +49,12 @@ describe('AlertService', () => {
     expect(await alert.pedirTexto({ titulo: 'Incidencia' })).toBeNull();
   });
 
-  it('credenciales escapa el HTML de los datos', async () => {
-    await alert.credenciales({ titulo: 'Cliente creado', nombre: '<b>Taller</b>', email: 'a<x>@b.com', clave: 'Ab3dEf7h' });
+  it('la invitación escapa el HTML de los datos', async () => {
+    await alert.invitacion({ titulo: 'Invitación enviada', nombre: '<b>Taller</b>', email: 'a<x>@b.com', enlace: 'http://localhost/activar/abc123', vigencia: '72 horas', accion: 'activar su cuenta' });
     const html = String(opciones()['html']);
     expect(html).not.toContain('<b>Taller</b>');
     expect(html).toContain('&lt;b&gt;Taller&lt;/b&gt;');
-    expect(html).toContain('Ab3dEf7h');
+    expect(html).toContain('activar/abc123');
+    expect(html).toContain('a&lt;x&gt;@b.com');
   });
 });

@@ -1,7 +1,7 @@
 import { FormControl, FormGroup } from '@angular/forms';
 import { aplicarMascara } from './mask.directive';
 import {
-  alturaValidator, calleValidator, localidadValidator, pisoValidator, cuilValido, cuitValidator, documentoValidator, emailValidator, formatearTelefono, telefonoNacional, telefonoValidator,
+  aNumero, aNumeroONulo, direccionEnvioValidator, enteroValidator, decimalValidator, productoNombreValidator, alturaValidator, calleValidator, localidadValidator, pisoValidator, cuilValido, cuitValidator, documentoValidator, emailValidator, formatearTelefono, telefonoNacional, telefonoValidator,
 } from './validators';
 
 describe('Validadores de cliente', () => {
@@ -106,6 +106,49 @@ describe('Validadores de cliente', () => {
     const loc = new FormControl('', localidadValidator);
     loc.setValue('Palermo'); expect(loc.errors).toBeNull();
     loc.setValue('Springfield'); expect(loc.errors).toEqual({ localidad: true });
+  });
+
+  it('números con coma: formato y rango', () => {
+    const peso = new FormControl('', decimalValidator(0.001, 100));
+    for (const ok of ['0,75', '1', '100', '12,', '0,001']) { peso.setValue(ok); expect(peso.errors).toBeNull(); }
+    for (const mal of ['1,2,3', '1.5', '-1', 'abc', ',5']) { peso.setValue(mal); expect(peso.errors).toEqual({ decimal: true }); }
+    for (const fuera of ['0', '100,1', '0,0001']) { peso.setValue(fuera); expect(peso.errors).toEqual({ rango: true }); }
+    expect(aNumero('12,5')).toBe(12.5);
+    expect(aNumero('')).toBe(0);
+    expect(aNumeroONulo('')).toBeNull();
+    expect(aNumeroONulo('  ')).toBeNull();
+    expect(aNumeroONulo('0,5')).toBe(0.5);
+  });
+
+  it('cantidades enteras con límites', () => {
+    const cantidad = new FormControl('', enteroValidator(1, 10000));
+    for (const ok of ['1', '250', '10000']) { cantidad.setValue(ok); expect(cantidad.errors).toBeNull(); }
+    for (const mal of ['1,5', 'abc', '-3']) { cantidad.setValue(mal); expect(cantidad.errors).toEqual({ entero: true }); }
+    for (const fuera of ['0', '10001']) { cantidad.setValue(fuera); expect(cantidad.errors).toEqual({ rango: true }); }
+    cantidad.setValue('');
+    expect(cantidad.errors).toBeNull();
+  });
+
+  it('dirección de entrega: letras y número', () => {
+    const dir = new FormControl('', direccionEnvioValidator);
+    for (const ok of ['Av. Cabildo 1840, 3° B', 'Honduras 4800', '9 de Julio 123 (timbre 2)', 'Juan B. Justo 2300 - PB']) { dir.setValue(ok); expect(dir.errors).toBeNull(); }
+    for (const mal of ['Palermo', '1234', 'Calle <5>']) { dir.setValue(mal); expect(dir.errors).toEqual({ direccion: true }); }
+  });
+
+  it('nombre de producto', () => {
+    const nombre = new FormControl('', productoNombreValidator);
+    for (const ok of ['Remera 100% algodón (M)', 'Cable USB-C', 'Kit #2 / pack']) { nombre.setValue(ok); expect(nombre.errors).toBeNull(); }
+    for (const mal of ['<b>Taza</b>', '%Taza', '*oferta*']) { nombre.setValue(mal); expect(nombre.errors).toEqual({ nombre: true }); }
+  });
+
+  it('las máscaras de peso, medida y precio aceptan coma o punto y limitan los decimales', () => {
+    expect(aplicarMascara('peso', '1.2345')).toBe('1,234');
+    expect(aplicarMascara('peso', '12345')).toBe('123');
+    expect(aplicarMascara('medida', '12,345')).toBe('12,3');
+    expect(aplicarMascara('medida', ',5')).toBe('0,5');
+    expect(aplicarMascara('precio', '15990.567')).toBe('15990,56');
+    expect(aplicarMascara('precio', '1a5,5,5')).toBe('15,55');
+    expect(aplicarMascara('precio', '12,')).toBe('12,');
   });
 
   it('las máscaras filtran caracteres inválidos', () => {

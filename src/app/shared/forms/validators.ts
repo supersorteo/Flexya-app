@@ -94,3 +94,60 @@ export function unico(existe: (valor: string, control: AbstractControl) => boole
   return (c: AbstractControl): ValidationErrors | null =>
     c.value && existe(String(c.value), c) ? { duplicado: true } : null;
 }
+
+export type FuerzaClave = 0 | 1 | 2 | 3 | 4;
+
+export function evaluarClave(clave: string) {
+  const longitud = clave.length >= 8;
+  const letra = /\p{L}/u.test(clave);
+  const numero = /\d/.test(clave);
+  const mezcla = /\p{Ll}/u.test(clave) && /\p{Lu}/u.test(clave);
+  const simbolo = /[^\p{L}\d]/u.test(clave);
+  const puntos = [longitud, clave.length >= 12, mezcla, letra && numero, simbolo].filter(Boolean).length;
+  return { longitud, letra, numero, fuerza: Math.min(4, puntos) as FuerzaClave };
+}
+
+export const claveValida = (clave: string) => {
+  const e = evaluarClave(clave);
+  return e.longitud && e.letra && e.numero;
+};
+
+export const claveValidator: ValidatorFn = (c) => (!c.value || claveValida(String(c.value)) ? null : { clave: true });
+
+export const coincidenValidator =
+  (campo: string, confirmacion: string): ValidatorFn =>
+  (g) => {
+    const a = g.get(campo)?.value;
+    const b = g.get(confirmacion)?.value;
+    return a && b && a !== b ? { noCoinciden: true } : null;
+  };
+
+export const aNumero = (texto: unknown): number => Number(String(texto ?? '').replace(',', '.'));
+
+export const aNumeroONulo = (texto: unknown): number | null => (String(texto ?? '').trim() === '' ? null : aNumero(texto));
+
+export const decimalValidator =
+  (min: number, max: number): ValidatorFn =>
+  (c) => {
+    const v = String(c.value ?? '');
+    if (!v) return null;
+    if (!/^\d+(,\d*)?$/.test(v)) return { decimal: true };
+    const n = aNumero(v);
+    return n < min || n > max ? { rango: true } : null;
+  };
+
+export const productoNombreValidator: ValidatorFn = (c) =>
+  !String(c.value ?? '').trim() || /^[\p{L}\p{N}][\p{L}\p{N} .,&'’\-/()+#%º°]*$/u.test(String(c.value).trim()) ? null : { nombre: true };
+
+export const enteroValidator =
+  (min: number, max: number): ValidatorFn =>
+  (c) => {
+    const v = String(c.value ?? '');
+    if (!v) return null;
+    if (!/^\d+$/.test(v)) return { entero: true };
+    const n = Number(v);
+    return n < min || n > max ? { rango: true } : null;
+  };
+
+export const direccionEnvioValidator: ValidatorFn = (c) =>
+  !String(c.value ?? '').trim() || /^(?=.*\p{L})(?=.*\d)[\p{L}\p{N} .,'’°º/#&()\-]+$/u.test(String(c.value).trim()) ? null : { direccion: true };

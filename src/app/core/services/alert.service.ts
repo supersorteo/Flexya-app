@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { CONFIG } from '../config';
+import { MOTIVOS_INCIDENCIA } from '../models';
 import type { SweetAlertCustomClass, SweetAlertIcon, SweetAlertOptions } from 'sweetalert2';
 
 export type TipoConfirmacion = 'peligro' | 'advertencia' | 'info';
@@ -22,11 +24,13 @@ export interface OpcionesTexto {
   multilinea?: boolean;
 }
 
-export interface OpcionesCredenciales {
+export interface OpcionesInvitacion {
   titulo: string;
   nombre: string;
   email: string;
-  clave: string;
+  enlace: string;
+  vigencia: string;
+  accion: string;
 }
 
 const COLORES: Record<SweetAlertIcon, string> = {
@@ -120,11 +124,37 @@ export class AlertService {
     return resultado.isConfirmed ? String(resultado.value ?? '').trim() : null;
   }
 
-  async credenciales(o: OpcionesCredenciales): Promise<void> {
+  async pedirIncidencia(titulo: string): Promise<{ motivoId: string; nota: string } | null> {
     const Swal = await cargarSwal();
-    const fila = (etiqueta: string, valor: string, campo: string) =>
-      `<div class="fx-cred"><div><small>${etiqueta}</small><code>${escapar(valor)}</code></div>` +
-      `<button type="button" class="btn btn-sm btn-outline-secondary" data-copiar="${campo}"><i class="bi bi-clipboard"></i> Copiar</button></div>`;
+    const opciones = MOTIVOS_INCIDENCIA.map((m) => `<option value="${m.id}">${escapar(m.etiqueta)}</option>`).join('');
+    const resultado = await Swal.fire({
+      ...BASE,
+      icon: 'warning',
+      iconColor: COLORES.warning,
+      title: titulo,
+      html:
+        '<div class="text-start"><label class="form-label" for="fx-inc-motivo">Motivo</label>' +
+        `<select id="fx-inc-motivo" class="form-select mb-3">${opciones}</select>` +
+        '<label class="form-label" for="fx-inc-nota">Detalle (opcional)</label>' +
+        '<textarea id="fx-inc-nota" class="form-control" rows="3" maxlength="200" placeholder="Ej. toqué timbre dos veces, no respondieron…"></textarea></div>',
+      showCancelButton: true,
+      confirmButtonText: 'Registrar incidencia',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => ({
+        motivoId: (document.getElementById('fx-inc-motivo') as HTMLSelectElement).value,
+        nota: (document.getElementById('fx-inc-nota') as HTMLTextAreaElement).value.trim(),
+      }),
+    });
+    return resultado.isConfirmed ? (resultado.value as { motivoId: string; nota: string }) : null;
+  }
+
+  async invitacion(o: OpcionesInvitacion): Promise<void> {
+    const Swal = await cargarSwal();
+    const demo = CONFIG.mostrarCorreosSimulados
+      ? `<div class="fx-cred"><div><small>Enlace (solo demostración)</small><code>${escapar(o.enlace)}</code></div>` +
+        `<button type="button" class="btn btn-sm btn-outline-secondary" data-copiar="enlace"><i class="bi bi-clipboard"></i> Copiar</button></div>` +
+        `<a class="small fw-bold" href="/correos" target="_blank" rel="noopener">Ver el correo en la bandeja de demostración</a>`
+      : '';
 
     await Swal.fire({
       ...BASE,
@@ -132,15 +162,14 @@ export class AlertService {
       iconColor: COLORES.success,
       title: o.titulo,
       html:
-        `<p class="fx-muted small mb-3"><strong>${escapar(o.nombre)}</strong><br>Compartí estos datos para que pueda ingresar. La clave temporal solo se muestra ahora.</p>` +
-        fila('Usuario (correo)', o.email, 'email') +
-        fila('Clave temporal', o.clave, 'clave'),
+        `<p class="fx-muted small mb-3"><strong>${escapar(o.nombre)}</strong><br>Enviamos un correo a <strong>${escapar(o.email)}</strong> con el enlace para ${escapar(o.accion)}. Vence en ${escapar(o.vigencia)}.</p>` +
+        demo,
       confirmButtonText: 'Listo',
       didOpen: (popup) => {
         popup.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((boton) =>
           boton.addEventListener('click', async () => {
             try {
-              await navigator.clipboard.writeText(boton.dataset['copiar'] === 'email' ? o.email : o.clave);
+              await navigator.clipboard.writeText(o.enlace);
               const icono = document.createElement('i');
               icono.className = 'bi bi-check2';
               boton.replaceChildren(icono, document.createTextNode(' Copiado'));
