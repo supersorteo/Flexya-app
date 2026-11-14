@@ -1,0 +1,58 @@
+.btn {
+  --bs-btn-border-radius: 9px;
+  --bs-btn-font-weight: 700;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--fx-blue);
+  --bs-btn-border-color: var(--fx-blue);
+  --bs-btn-hover-bg: var(--fx-blue-dark);
+  --bs-btn-hover-border-color: var(--fx-blue-dark);
+  --bs-btn-active-bg: var(--fx-blue-dark);
+  --bs-btn-active-border-color: var(--fx-blue-dark);
+  --bs-btn-disabled-bg: var(--fx-blue);
+  --bs-btn-disabled-border-color: var(--fx-blue);
+  box-shadow: 0 8px 18px rgba(53, 106, 230, 0.18);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--fx-ink);
+  --bs-btn-border-color: var(--fx-line);
+  --bs-btn-hover-bg: #fff;
+  --bs-btn-hover-color: var(--fx-ink);
+  --bs-btn-hover-border-color: #cdd6e2;
+  --bs-btn-bg: #fff;
+}
+
+.form-control,
+.form-select {
+  min-height: 44px;
+  border-radius: 8px;
+  background-color: #fbfcfe;
+
+  &:focus {
+    border-color: #a8bffb;
+    box-shadow: 0 0 0 3px #edf2ff;
+  }
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #657187;
+}
+
+.modal-content {
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(12, 26, 48, 0.2);
+}
+
+.offcanvas {
+  --bs-offcanvas-width: min(300px, 85vw);
+}

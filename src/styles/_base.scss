@@ -1,0 +1,32 @@
+body {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .fx-display {
+  font-family: var(--fx-font-display);
+  letter-spacing: -0.03em;
+}
+
+.fx-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9da6b4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fx-muted { color: var(--fx-muted); }
+
+.fx-panel {
+  background: var(--fx-panel);
+  border: 1px solid var(--fx-line);
+  border-radius: var(--fx-radius);
+  box-shadow: var(--fx-shadow);
+  overflow: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--fx-blue);
+  outline-offset: 2px;
+}

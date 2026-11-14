@@ -1,0 +1,43 @@
+:root {
+  --fx-ink: #162235;
+  --fx-muted: #7d8798;
+  --fx-soft: #f6f8fb;
+  --fx-line: #e8edf3;
+  --fx-panel: #fff;
+  --fx-navy: #142740;
+  --fx-blue: #356ae6;
+  --fx-blue-dark: #2858cd;
+  --fx-blue-soft: #eaf0ff;
+  --fx-teal: #20b898;
+  --fx-teal-soft: #e6f8f3;
+  --fx-amber: #f3a63b;
+  --fx-amber-soft: #fff4df;
+  --fx-rose: #e86c7b;
+  --fx-rose-soft: #fff0f2;
+  --fx-purple: #8c6be8;
+  --fx-purple-soft: #f0ebff;
+  --fx-shadow: 0 12px 35px rgba(28, 45, 73, 0.06);
+  --fx-radius: 14px;
+  --fx-radius-sm: 10px;
+  --fx-font-body: 'DM Sans', system-ui, sans-serif;
+  --fx-font-display: 'Space Grotesk', 'DM Sans', sans-serif;
+  --fx-sidebar-w: 252px;
+  --fx-topbar-h: 64px;
+  --fx-bottomnav-h: 64px;
+
+  --bs-body-font-family: var(--fx-font-body);
+  --bs-body-color: var(--fx-ink);
+  --bs-body-bg: var(--fx-soft);
+  --bs-primary: var(--fx-blue);
+  --bs-primary-rgb: 53, 106, 230;
+  --bs-success: var(--fx-teal);
+  --bs-success-rgb: 32, 184, 152;
+  --bs-warning: var(--fx-amber);
+  --bs-warning-rgb: 243, 166, 59;
+  --bs-danger: var(--fx-rose);
+  --bs-danger-rgb: 232, 108, 123;
+  --bs-border-color: var(--fx-line);
+  --bs-link-color: var(--fx-blue);
+  --bs-link-color-rgb: 53, 106, 230;
+  --bs-link-hover-color: var(--fx-blue-dark);
+}
