@@ -67,3 +67,11 @@
   .fx-table--filas tbody tr:hover td.fx-actions { background: var(--fx-primary-soft); }
   .fx-table--filas:has(td.fx-actions) th:last-child { background: var(--fx-th-bg); }
 }
+
+/* Los botones de cada fila quedan centrados con el resto del contenido: la celda es una celda de tabla normal, no un contenedor flex */
+.fx-table--filas td.fx-actions {
+  display: table-cell; vertical-align: middle; white-space: nowrap;
+  > * { vertical-align: middle; }
+  > * + * { margin-left: 8px; }
+  .form-select { display: inline-block; width: auto; max-width: 240px; }
+}
