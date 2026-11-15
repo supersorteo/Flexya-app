@@ -214,9 +214,17 @@ export class Shell {
     });
   }
 
-  protected logout() {
+  protected async logout() {
+    const confirmado = await this.alert.confirmar({
+      titulo: '¿Cerrar sesión?',
+      mensaje: 'Vas a salir de tu cuenta en este dispositivo. Para volver a entrar vas a necesitar tu contraseña.',
+      confirmar: 'Sí, salir',
+      cancelar: 'Quedarme',
+      tipo: 'info',
+    });
+    if (!confirmado) return;
     this.auth.logout();
-    this.router.navigate(['/login']);
+    void this.router.navigate(['/login']);
   }
 
   protected async reset() {

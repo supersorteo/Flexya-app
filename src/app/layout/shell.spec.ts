@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../app.routes';
+import { AlertService } from '../core/services/alert.service';
 import { AuthService } from '../core/services/auth.service';
 import { ThemeService } from '../core/services/theme.service';
 
@@ -138,5 +139,23 @@ describe('Período global en el shell', () => {
     el.querySelector<HTMLButtonElement>('.fx-viendo button')!.click();
     harness.detectChanges();
     expect(el.querySelector('.fx-viendo')).toBeNull();
+  });
+
+  it('cerrar sesión pide confirmación: si se cancela sigue adentro y si se confirma sale', async () => {
+    const alerta = TestBed.inject(AlertService);
+    const confirmar = vi.spyOn(alerta, 'confirmar').mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const { harness, el } = await admin('/admin/inicio');
+    const auth = TestBed.inject(AuthService);
+    const salir = el.querySelector<HTMLButtonElement>('[aria-label="Cerrar sesión"]')!;
+
+    salir.click();
+    await esperar(() => confirmar.mock.calls.length === 1);
+    harness.detectChanges();
+    expect(confirmar.mock.calls[0][0].titulo).toBe('¿Cerrar sesión?');
+    expect(auth.user()).not.toBeNull();
+
+    salir.click();
+    await esperar(() => auth.user() === null);
+    expect(auth.user()).toBeNull();
   });
 });
