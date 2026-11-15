@@ -23,30 +23,32 @@ export class KpiCard {
   readonly tone = input<'blue' | 'teal' | 'amber' | 'purple'>('blue');
 }
 
-const ESTADO_CLASE: Record<EstadoEnvio, string> = {
-  Entregado: 'st-delivered',
-  'En reparto': 'st-route',
-  Pendiente: 'st-pending',
-  'En depósito': 'st-deposit',
-  'En devolución': 'st-pending',
-  Devuelto: 'st-delivered',
-  Borrador: 'st-pending',
-  'Retiro asignado': 'st-route',
-  Retirado: 'st-route',
-  'Retiro fallido': 'st-incident',
-  'En revisión': 'st-pending',
-  Incidencia: 'st-incident',
-  Cancelado: 'st-incident',
+const ESTADO_PILL: Record<EstadoEnvio, { slug: string; icono: string }> = {
+  Borrador: { slug: 'borrador', icono: 'pencil-square' },
+  Pendiente: { slug: 'pendiente', icono: 'clock' },
+  'Retiro asignado': { slug: 'retiro-asignado', icono: 'person-check' },
+  Retirado: { slug: 'retirado', icono: 'box-seam' },
+  'Retiro fallido': { slug: 'retiro-fallido', icono: 'x-octagon' },
+  'En depósito': { slug: 'en-deposito', icono: 'building' },
+  'En revisión': { slug: 'en-revision', icono: 'pause-circle' },
+  'En reparto': { slug: 'en-reparto', icono: 'truck' },
+  Incidencia: { slug: 'incidencia', icono: 'exclamation-triangle' },
+  'En devolución': { slug: 'en-devolucion', icono: 'arrow-return-left' },
+  Devuelto: { slug: 'devuelto', icono: 'check2-all' },
+  Entregado: { slug: 'entregado', icono: 'check-circle' },
+  Cancelado: { slug: 'cancelado', icono: 'x-circle' },
 };
+
+export const slugEstado = (estado: string) => ESTADO_PILL[estado as EstadoEnvio]?.slug ?? 'pendiente';
 
 @Component({
   selector: 'fx-status',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span [class]="'fx-status ' + clase()">{{ estado() }}</span>`,
+  template: `<span [class]="'fx-status st-' + info().slug"><i [class]="'bi bi-' + info().icono" aria-hidden="true"></i>{{ estado() }}</span>`,
 })
 export class StatusPill {
   readonly estado = input.required<string>();
-  protected readonly clase = computed(() => ESTADO_CLASE[this.estado() as EstadoEnvio] ?? 'st-pending');
+  protected readonly info = computed(() => ESTADO_PILL[this.estado() as EstadoEnvio] ?? { slug: 'pendiente', icono: 'circle' });
 }
 
 @Component({

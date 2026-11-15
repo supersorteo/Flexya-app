@@ -1,0 +1,21 @@
+@use '../abstracts/mixins' as *;
+@use '../abstracts/breakpoints' as *;
+
+.fx-kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (min-width: $bp-lg) { .fx-kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+
+.fx-kpi {
+  @include tarjeta; border-radius: var(--fx-r-lg);
+  padding: 16px 18px; height: 100%; transition: border-color var(--fx-dur-fast) var(--fx-ease);
+}
+.fx-kpi-value { font-family: var(--fx-font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin: 10px 0 4px; font-variant-numeric: tabular-nums; }
+.fx-kpi-icon {
+  width: 32px; height: 32px; border-radius: var(--fx-r-md); display: grid; place-items: center; font-size: 16px;
+  &.tone-blue { background: var(--fx-primary-soft); color: var(--fx-primary); }
+  &.tone-teal { background: var(--fx-success-soft); color: var(--fx-success-text); }
+  &.tone-amber { background: var(--fx-warning-soft); color: var(--fx-warning-text); }
+  &.tone-purple { background: var(--fx-violet-soft); color: var(--fx-violet-text); }
+}
+
+.fx-kpi-link { display: block; color: inherit; text-decoration: none; border-radius: var(--fx-r-lg); }
+.fx-kpi-link:hover .fx-kpi, .fx-kpi-link:focus-visible .fx-kpi { border-color: var(--fx-primary); }

@@ -5,11 +5,26 @@
   <title>Flexya · Operaciones que fluyen</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f6f8fb">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f3f6fb">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html { background: #f3f6fb; }
+    html[data-bs-theme='dark'] { background: #0a1424; }
+  </style>
+  <script>
+    (function () {
+      try {
+        var guardada = localStorage.getItem('flexya-tema');
+        var oscuro = guardada === 'oscuro' || ((!guardada || guardada === 'sistema') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-bs-theme', oscuro ? 'dark' : 'light');
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', oscuro ? '#0a1424' : '#f3f6fb');
+      } catch (e) {
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+      }
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>

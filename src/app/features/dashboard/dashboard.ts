@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { CrearEnvio } from '../envios/crear-envio';
 import { EnviosTable } from '../../shared/ui/envios-table';
+import { Jornada } from '../../shared/ui/jornada';
 import { ParadaCard } from '../../shared/ui/parada-card';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
 import { tarjetaGanancias } from '../pagos/tarjeta-ganancias';
@@ -22,7 +23,7 @@ interface Kpi {
 
 @Component({
   selector: 'fx-dashboard',
-  imports: [KpiCard, PageHeader, EnviosTable, ParadaCard, RouterLink, DatePipe, AlertasAdmin, ResumenNegocio],
+  imports: [Jornada, KpiCard, PageHeader, EnviosTable, ParadaCard, RouterLink, DatePipe, AlertasAdmin, ResumenNegocio],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <fx-page-header [eyebrow]="eyebrow()" [title]="titulo()" [subtitle]="subtitulo()">
@@ -30,6 +31,10 @@ interface Kpi {
         <button type="button" class="btn btn-primary" (click)="nuevoEnvio()"><i class="bi bi-plus-lg"></i>Nuevo envío</button>
       }
     </fx-page-header>
+
+    @if (user()?.rol === 'mensajero') {
+      <fx-jornada [envios]="envios()" />
+    }
 
     @if (user()?.rol === 'admin' && !data.clientes().length) {
       <div class="fx-onboarding">

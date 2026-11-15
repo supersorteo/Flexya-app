@@ -1,0 +1,13 @@
+@use '../abstracts/breakpoints' as *;
+
+.fx-shell { min-height: 100vh; }
+
+.fx-main { min-height: 100vh; display: flex; flex-direction: column; }
+
+.fx-page { padding: 20px 16px calc(var(--fx-bottomnav-h) + 28px); width: 100%; max-width: 1440px; margin: 0 auto; }
+
+@media (min-width: $bp-lg) {
+  .fx-main { margin-left: var(--fx-sidebar-w); }
+  .fx-topbar { padding: 0 40px; }
+  .fx-page { padding: 34px 40px 52px; }
+}

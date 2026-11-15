@@ -1,0 +1,10 @@
+.fx-topbar {
+  height: var(--fx-topbar-h); background: var(--fx-surface); border-bottom: 1px solid var(--fx-border);
+  display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: var(--fx-z-sticky);
+}
+.fx-user strong { font-size: var(--fx-fs-sm); display: block; }
+.fx-avatar {
+  width: 36px; height: 36px; border-radius: var(--fx-r-md); background: var(--fx-brand); color: var(--fx-on-brand);
+  display: grid; place-items: center; font-size: var(--fx-fs-xs); font-weight: 700; text-decoration: none;
+}
+.fx-tema i { font-size: 16px; }

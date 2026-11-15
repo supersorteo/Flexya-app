@@ -1,0 +1,18 @@
+.fx-page-header {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 14px; margin-bottom: 22px;
+  h1 { font-size: 24px; margin: 4px 0 6px; }
+  p { font-size: 13px; }
+}
+.fx-page-actions:empty { display: none; }
+@media (max-width: 575px) { .fx-page-actions .btn { width: 100%; } .fx-page-actions { width: 100%; } }
+
+.fx-panel-head { padding: 16px 18px 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+.fx-panel-title { font-family: var(--fx-font-display); font-weight: 700; font-size: 15px; }
+.fx-form-panel { padding: 18px; max-width: 900px; }
+.fx-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+@media (max-width: 575px) { .fx-form-actions .btn { flex: 1; } }
+.fx-filters { min-width: 0; .form-control, .form-select { max-width: 240px; } }
+@media (max-width: 575px) { .fx-filters { flex-direction: column; width: 100%; .form-control, .form-select { max-width: none; } } }
+
+.fx-search { max-width: 360px; }
+@media (max-width: 575px) { .fx-search { max-width: none; width: 100%; } }

@@ -1,0 +1,26 @@
+/* Estado de un envío: color e ícono propios, así no depende solo del color */
+.fx-status {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 4px 10px 4px 8px; border-radius: var(--fx-r-pill);
+  font-size: var(--fx-fs-xs); font-weight: 600; line-height: 1.3;
+  background: var(--st-bg, var(--fx-surface-3)); color: var(--st-fg, var(--fx-text-soft));
+  > i { font-size: 13px; }
+  &:not(:has(> i))::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+}
+
+@each $estado in (borrador, pendiente, retiro-asignado, retirado, retiro-fallido, en-deposito, en-revision, en-reparto, incidencia, en-devolucion, devuelto, entregado, cancelado) {
+  .st-#{$estado} { --st-bg: var(--fx-st-#{$estado}-bg); --st-fg: var(--fx-st-#{$estado}-fg); }
+}
+.st-borrador { border: 1px dashed currentColor; }
+.st-en-reparto > i { animation: fx-pulso 2s ease-in-out infinite; }
+@keyframes fx-pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* Nombres anteriores: se siguen usando como etiquetas genéricas en algunas pantallas */
+.st-delivered { --st-bg: var(--fx-st-entregado-bg); --st-fg: var(--fx-st-entregado-fg); }
+.st-route { --st-bg: var(--fx-st-en-reparto-bg); --st-fg: var(--fx-st-en-reparto-fg); }
+.st-pending { --st-bg: var(--fx-st-pendiente-bg); --st-fg: var(--fx-st-pendiente-fg); }
+.st-deposit { --st-bg: var(--fx-st-en-deposito-bg); --st-fg: var(--fx-st-en-deposito-fg); }
+.st-incident { --st-bg: var(--fx-st-incidencia-bg); --st-fg: var(--fx-st-incidencia-fg); }
+
+.fx-zone { display: inline-block; margin-left: 4px; font-size: var(--fx-fs-xs); font-weight: 600; color: var(--fx-violet-text); background: var(--fx-violet-soft); border-radius: var(--fx-r-sm); padding: 2px 7px; white-space: nowrap; }
+.fx-chips { display: flex; flex-wrap: wrap; gap: 5px; span { font-size: var(--fx-fs-xs); background: var(--fx-surface-3); color: var(--fx-text-soft); border-radius: var(--fx-r-sm); padding: 3px 8px; } }

@@ -48,6 +48,8 @@ function mensaje(r: Extract<ResultadoLogin, { ok: false }>): string {
         <button type="submit" class="btn btn-primary w-100" [disabled]="cargando()">
           @if (cargando()) {
             <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          } @else {
+            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
           }
           Ingresar
         </button>

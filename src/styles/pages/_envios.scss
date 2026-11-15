@@ -1,0 +1,52 @@
+.fx-empty-box { text-align: center; padding: 24px 16px; border: 1px dashed var(--fx-border-strong); border-radius: 12px; background: var(--fx-surface-2); color: var(--fx-muted); i { font-size: 30px; display: block; margin-bottom: 8px; } }
+.fx-contenido { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 6px; li { font-size: 14px; } }
+.fx-detalle-modal { gap: 18px 24px; }
+@media (min-width: 768px) { .fx-detalle-modal { grid-template-columns: repeat(2, 1fr); } }
+.fx-detalle-bloque { min-width: 0; }
+
+/* Seguimiento del envío */
+.fx-seguimiento { list-style: none; margin: 0 0 18px; padding: 0; display: flex;
+  li { flex: 1; text-align: center; font-size: 12px; font-weight: 600; color: var(--fx-muted); position: relative;
+    &::before { content: ''; position: absolute; top: 13px; right: 50%; width: 100%; height: 3px; background: var(--fx-surface-3); }
+    &:first-child::before { display: none; }
+    .punto { position: relative; z-index: 1; width: 28px; height: 28px; margin: 0 auto 6px; border-radius: 50%; display: grid; place-items: center; background: var(--fx-surface-3); color: var(--fx-text-soft); font-size: 13px; }
+    &.hecho { color: var(--fx-ink); .punto { background: var(--fx-success-strong); color: var(--fx-on-solid); } &::before { background: var(--fx-teal); } }
+    &.actual .punto { background: var(--fx-blue); color: var(--fx-on-solid); box-shadow: 0 0 0 4px var(--fx-primary-soft); }
+  }
+}
+
+/* Historial de fechas del envío */
+.fx-historial { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; max-height: 220px; overflow-y: auto; }
+.fx-historial li { display: grid; gap: 1px; padding-left: 12px; border-left: 2px solid var(--bs-border-color); font-size: 13px; }
+.fx-historial li small { color: var(--bs-secondary-color); }
+
+/* Retiro con varios destinatarios */
+.fx-destinos { display: grid; gap: 10px; }
+.fx-destino { border: 1px solid var(--fx-line); border-radius: 12px; background: var(--fx-surface); overflow: hidden; }
+.fx-destino.abierto { border-color: var(--fx-primary-border); box-shadow: 0 1px 0 rgba(53, 106, 230, 0.06); }
+.fx-destino.con-error { border-color: var(--fx-danger-border); }
+.fx-destino-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--fx-surface-2); }
+.fx-destino-titulo { flex: 1; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; text-align: left; padding: 4px 2px; min-width: 0; }
+.fx-destino-num { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--bs-primary); color: var(--fx-on-solid); font-size: 13px; flex: none; }
+.fx-destino-resumen { display: grid; min-width: 0; flex: 1; }
+.fx-destino-resumen strong, .fx-destino-resumen small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-destino-resumen small { color: var(--bs-secondary-color); }
+.fx-destino-body { padding: 12px; }
+
+/* Pantalla de pagos más guiada */
+.fx-pasos-pago { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .fx-pasos-pago { grid-template-columns: repeat(3, 1fr); } }
+.fx-pasos-pago li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--fx-line); border-radius: 12px; background: var(--fx-surface); }
+.fx-pasos-pago small { display: block; color: var(--bs-secondary-color); }
+.fx-paso-num { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--bs-primary); color: var(--fx-on-solid); font-size: 13px; font-weight: 700; margin-right: 6px; flex: none; }
+.fx-pasos-pago .fx-paso-num { margin-right: 0; width: 28px; height: 28px; }
+.fx-ejemplo { padding: 12px 14px; border-radius: 12px; background: var(--fx-primary-soft); border: 1px solid var(--fx-primary-border); }
+.fx-ejemplo small { color: var(--bs-secondary-color); }
+.fx-ejemplo-fila { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 4px; }
+.fx-opcional { border: 1px solid var(--fx-line); border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; background: var(--fx-surface); }
+.fx-opcional > summary { cursor: pointer; font-weight: 600; }
+.fx-excepciones { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .fx-excepciones { grid-template-columns: repeat(2, 1fr); } }
+.fx-excepcion { display: grid; gap: 4px; padding: 10px; border: 1px solid var(--fx-line); border-radius: 10px; }
+.fx-excepcion label { display: flex; flex-direction: column; }
+.fx-excepcion label small { color: var(--bs-secondary-color); }

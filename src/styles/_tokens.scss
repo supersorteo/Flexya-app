@@ -1,43 +1,315 @@
+/*
+ * Sistema de diseño de Flexya.
+ *
+ * Capa 1: tokens semánticos (--fx-*) con valores claro y oscuro. Los componentes solo consumen esta capa.
+ * Capa 2: alias heredados (--fx-ink, --fx-blue, ...) para no romper estilos existentes mientras se migra.
+ * Capa 3: puente a Bootstrap (--bs-*): Bootstrap llega compilado, así que solo se tematiza con variables.
+ *
+ * Regla de color: el azul noche es la estructura, el azul es lo seleccionado/activo y el NARANJA es solo
+ * para la acción principal o lo que pide una decisión.
+ */
+
+:root,
+[data-bs-theme='light'] {
+  color-scheme: light;
+
+  /* Superficies y texto */
+  --fx-bg: #e4ebf5;
+  --fx-surface: #ffffff;
+  --fx-surface-2: #f3f6fb;
+  --fx-surface-3: #e6ecf5;
+  --fx-text: #26344d;
+  --fx-text-soft: #4d5f7a;
+  --fx-placeholder: #64748b;
+  --fx-border: #bccade;
+  --fx-border-strong: #9fb1cc;
+  --fx-input-border: #647a99;
+  --fx-divider: #cdd8e8;
+
+  /* Estructura (barra lateral, cabeceras) */
+  --fx-brand: #0b1f3a;
+  --fx-brand-2: #12294a;
+  --fx-on-brand: #e8eef7;
+  --fx-on-brand-soft: #9db0cc;
+  --fx-on-brand-accent: #7fa6ff;
+
+  /* Azul: selección, enlaces, foco */
+  --fx-primary: #2563eb;
+  --fx-primary-hover: #1d4ed8;
+  --fx-primary-soft: #e8f0fe;
+  --fx-primary-border: #bfd3fb;
+  --fx-focus: #2563eb;
+
+  /* Naranja: la acción principal. El texto va en azul noche: blanco sobre naranja no pasa AA */
+  --fx-accent: #f97316;
+  --fx-accent-hover: #ea6a0a;
+  --fx-on-accent: #0b1f3a;
+  --fx-accent-soft: #ffedd5;
+  --fx-accent-text: #c2410c;
+
+  /* Estados (relleno, fondo suave, texto sobre suave, borde) */
+  --fx-success: #16a34a;
+  --fx-success-soft: #dcfce7;
+  --fx-success-text: #166534;
+  --fx-success-strong: #15803d;
+  --fx-warning: #d97706;
+  --fx-warning-soft: #fef3c7;
+  --fx-warning-text: #92400e;
+  --fx-warning-strong: #b45309;
+  --fx-warning-border: #f2d8a8;
+  --fx-danger: #dc2626;
+  --fx-danger-soft: #fee2e2;
+  --fx-danger-text: #991b1b;
+  --fx-danger-border: #f4b9bf;
+  --fx-violet: #7c3aed;
+  --fx-violet-soft: #ede9fe;
+  --fx-violet-text: #5b21b6;
+
+  /* Texto sobre un relleno de color sólido */
+  --fx-on-solid: #ffffff;
+  /* Estados de envío: un color propio para cada uno (fondo / texto) */
+  --fx-st-borrador-bg: #eef1f6;
+  --fx-st-borrador-fg: #475569;
+  --fx-st-pendiente-bg: #fef3c7;
+  --fx-st-pendiente-fg: #92400e;
+  --fx-st-retiro-asignado-bg: #e0e7ff;
+  --fx-st-retiro-asignado-fg: #3730a3;
+  --fx-st-retirado-bg: #cffafe;
+  --fx-st-retirado-fg: #155e75;
+  --fx-st-retiro-fallido-bg: #ffe4e6;
+  --fx-st-retiro-fallido-fg: #9f1239;
+  --fx-st-en-deposito-bg: #ede9fe;
+  --fx-st-en-deposito-fg: #5b21b6;
+  --fx-st-en-revision-bg: #ffedd5;
+  --fx-st-en-revision-fg: #9a3412;
+  --fx-st-en-reparto-bg: #dbeafe;
+  --fx-st-en-reparto-fg: #1e40af;
+  --fx-st-incidencia-bg: #fee2e2;
+  --fx-st-incidencia-fg: #991b1b;
+  --fx-st-en-devolucion-bg: #fce7f3;
+  --fx-st-en-devolucion-fg: #9d174d;
+  --fx-st-devuelto-bg: #e3ece8;
+  --fx-st-devuelto-fg: #2f4f43;
+  --fx-st-entregado-bg: #dcfce7;
+  --fx-st-entregado-fg: #166534;
+  --fx-st-cancelado-bg: #e5e7eb;
+  --fx-st-cancelado-fg: #374151;
+
+  /* Sombras: solo tres niveles; los paneles estáticos van con borde */
+  --fx-shadow: 0 1px 2px rgba(20, 40, 75, 0.1), 0 10px 24px rgba(20, 40, 75, 0.1);
+  --fx-card-grad: linear-gradient(135deg, #3b6fe0 0%, #9db2d4 48%, #1f3a63 100%);
+  --fx-th-bg: #d9e3f2;
+  --fx-field-bg: #ffffff;
+  --fx-primary-ink: #1d4ed8;
+  --fx-row-alt: #f1f5fb;
+  --fx-sh-1: 0 1px 2px rgba(15, 27, 45, 0.08), 0 2px 6px rgba(15, 27, 45, 0.06);
+  --fx-sh-2: 0 8px 24px rgba(15, 27, 45, 0.12);
+  --fx-sh-3: 0 24px 70px rgba(12, 26, 48, 0.35);
+}
+
+[data-bs-theme='dark'] {
+  color-scheme: dark;
+
+  --fx-bg: #0a1424;
+  --fx-surface: #101e36;
+  --fx-surface-2: #14253f;
+  --fx-surface-3: #1b3050;
+  --fx-text: #e8eef7;
+  --fx-text-soft: #a9b7ce;
+  --fx-placeholder: #8396b3;
+  --fx-border: #243857;
+  --fx-border-strong: #3a5278;
+  --fx-input-border: #5a7094;
+  --fx-divider: #1b2d49;
+
+  --fx-brand: #08111f;
+  --fx-brand-2: #0f1d33;
+  --fx-on-brand: #e8eef7;
+  --fx-on-brand-soft: #8fa3c2;
+  --fx-on-brand-accent: #7fa6ff;
+
+  --fx-primary: #7fa6ff;
+  --fx-primary-hover: #a3c0ff;
+  --fx-primary-soft: #17305e;
+  --fx-primary-border: #2f5aa8;
+  --fx-focus: #7fa6ff;
+
+  --fx-accent: #f97316;
+  --fx-accent-hover: #fb8a3c;
+  --fx-on-accent: #0b1f3a;
+  --fx-accent-soft: #3a2314;
+  --fx-accent-text: #fb923c;
+
+  --fx-success: #22c55e;
+  --fx-success-soft: #0f3a26;
+  --fx-success-text: #86efac;
+  --fx-success-strong: #22c55e;
+  --fx-warning: #f59e0b;
+  --fx-warning-soft: #3d2e0a;
+  --fx-warning-text: #fcd34d;
+  --fx-warning-strong: #f59e0b;
+  --fx-warning-border: #6b4e12;
+  --fx-danger: #ef4444;
+  --fx-danger-soft: #43161b;
+  --fx-danger-text: #fca5a5;
+  --fx-danger-border: #7a2a31;
+  --fx-violet: #a78bfa;
+  --fx-violet-soft: #2a1f55;
+  --fx-violet-text: #c4b5fd;
+
+  --fx-on-solid: #0a1424;
+  /* Estados de envío: un color propio para cada uno (fondo / texto) */
+  --fx-st-borrador-bg: #1e2b45;
+  --fx-st-borrador-fg: #cbd5e1;
+  --fx-st-pendiente-bg: #3d2e0a;
+  --fx-st-pendiente-fg: #fcd34d;
+  --fx-st-retiro-asignado-bg: #1e2a5c;
+  --fx-st-retiro-asignado-fg: #a5b4fc;
+  --fx-st-retirado-bg: #0c3a46;
+  --fx-st-retirado-fg: #67e8f9;
+  --fx-st-retiro-fallido-bg: #4a1624;
+  --fx-st-retiro-fallido-fg: #fda4af;
+  --fx-st-en-deposito-bg: #2a1f55;
+  --fx-st-en-deposito-fg: #c4b5fd;
+  --fx-st-en-revision-bg: #3a2314;
+  --fx-st-en-revision-fg: #fdba74;
+  --fx-st-en-reparto-bg: #17305e;
+  --fx-st-en-reparto-fg: #93c5fd;
+  --fx-st-incidencia-bg: #43161b;
+  --fx-st-incidencia-fg: #fca5a5;
+  --fx-st-en-devolucion-bg: #4a1535;
+  --fx-st-en-devolucion-fg: #f9a8d4;
+  --fx-st-devuelto-bg: #1b3028;
+  --fx-st-devuelto-fg: #a7d4c0;
+  --fx-st-entregado-bg: #0f3a26;
+  --fx-st-entregado-fg: #86efac;
+  --fx-st-cancelado-bg: #2a2f3a;
+  --fx-st-cancelado-fg: #d1d5db;
+
+  --fx-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 24px rgba(0, 0, 0, 0.4);
+  --fx-card-grad: linear-gradient(135deg, #4f86f0 0%, #2e4468 50%, #f59e5b 100%);
+  --fx-th-bg: #1b3050;
+  --fx-field-bg: #0c192e;
+  --fx-primary-ink: #93b8ff;
+  --fx-row-alt: #13233e;
+  --fx-sh-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --fx-sh-2: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --fx-sh-3: 0 24px 70px rgba(0, 0, 0, 0.7);
+}
+
 :root {
-  --fx-ink: #162235;
-  --fx-muted: #7d8798;
-  --fx-soft: #f6f8fb;
-  --fx-line: #e8edf3;
-  --fx-panel: #fff;
-  --fx-navy: #142740;
-  --fx-blue: #356ae6;
-  --fx-blue-dark: #2858cd;
-  --fx-blue-soft: #eaf0ff;
-  --fx-teal: #20b898;
-  --fx-teal-soft: #e6f8f3;
-  --fx-amber: #f3a63b;
-  --fx-amber-soft: #fff4df;
-  --fx-rose: #e86c7b;
-  --fx-rose-soft: #fff0f2;
-  --fx-purple: #8c6be8;
-  --fx-purple-soft: #f0ebff;
-  --fx-shadow: 0 12px 35px rgba(28, 45, 73, 0.06);
-  --fx-radius: 14px;
-  --fx-radius-sm: 10px;
-  --fx-font-body: 'DM Sans', system-ui, sans-serif;
-  --fx-font-display: 'Space Grotesk', 'DM Sans', sans-serif;
+  /* Forma */
+  --fx-r-xs: 4px;
+  --fx-r-sm: 6px;
+  --fx-r-md: 10px;
+  --fx-r-lg: 14px;
+  --fx-r-xl: 20px;
+  --fx-r-pill: 999px;
+  --fx-radius: var(--fx-r-lg);
+  --fx-radius-sm: var(--fx-r-md);
+
+  /* Espaciado en base 4 */
+  --fx-sp-1: 4px;
+  --fx-sp-2: 8px;
+  --fx-sp-3: 12px;
+  --fx-sp-4: 16px;
+  --fx-sp-5: 20px;
+  --fx-sp-6: 24px;
+  --fx-sp-7: 32px;
+  --fx-sp-8: 48px;
+
+  /* Tipografía: nunca por debajo de 12 px */
+  --fx-font-body: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fx-font-display: 'Bricolage Grotesque Variable', 'Figtree Variable', system-ui, sans-serif;
+  --fx-fs-xs: 12px;
+  --fx-fs-sm: 13px;
+  --fx-fs-md: 14px;
+  --fx-fs-lg: 16px;
+  --fx-fs-xl: 20px;
+  --fx-fs-2xl: 24px;
+  --fx-fs-3xl: 32px;
+
+  /* Capas */
+  --fx-z-sticky: 10;
+  --fx-z-bottomnav: 20;
+  --fx-z-sidebar: 20;
+  --fx-z-dropdown: 1080;
+  --fx-z-toast: 2000;
+
+  /* Movimiento */
+  --fx-dur-fast: 120ms;
+  --fx-dur-base: 200ms;
+  --fx-dur-slow: 320ms;
+  --fx-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Dimensiones del shell */
   --fx-sidebar-w: 252px;
   --fx-topbar-h: 64px;
   --fx-bottomnav-h: 64px;
+}
 
+/* Alias heredados: apuntan a los tokens nuevos. Se eliminan cuando ya nada los use. */
+:root,
+[data-bs-theme='light'],
+[data-bs-theme='dark'] {
+  --fx-ink: var(--fx-text);
+  --fx-muted: var(--fx-text-soft);
+  --fx-soft: var(--fx-bg);
+  --fx-line: var(--fx-border);
+  --fx-panel: var(--fx-surface);
+  --fx-navy: var(--fx-brand);
+  --fx-blue: var(--fx-primary);
+  --fx-blue-dark: var(--fx-primary-hover);
+  --fx-blue-soft: var(--fx-primary-soft);
+  --fx-teal: var(--fx-success);
+  --fx-teal-soft: var(--fx-success-soft);
+  --fx-amber: var(--fx-warning);
+  --fx-amber-soft: var(--fx-warning-soft);
+  --fx-rose: var(--fx-danger);
+  --fx-rose-soft: var(--fx-danger-soft);
+  --fx-purple: var(--fx-violet);
+  --fx-purple-soft: var(--fx-violet-soft);
+}
+
+/* Puente a Bootstrap: --fx-* es la fuente de verdad y --bs-* solo la refleja */
+:root,
+[data-bs-theme='light'],
+[data-bs-theme='dark'] {
   --bs-body-font-family: var(--fx-font-body);
-  --bs-body-color: var(--fx-ink);
-  --bs-body-bg: var(--fx-soft);
-  --bs-primary: var(--fx-blue);
-  --bs-primary-rgb: 53, 106, 230;
-  --bs-success: var(--fx-teal);
-  --bs-success-rgb: 32, 184, 152;
-  --bs-warning: var(--fx-amber);
-  --bs-warning-rgb: 243, 166, 59;
-  --bs-danger: var(--fx-rose);
-  --bs-danger-rgb: 232, 108, 123;
-  --bs-border-color: var(--fx-line);
-  --bs-link-color: var(--fx-blue);
-  --bs-link-color-rgb: 53, 106, 230;
-  --bs-link-hover-color: var(--fx-blue-dark);
+  --bs-body-color: var(--fx-text);
+  --bs-body-bg: var(--fx-bg);
+  --bs-emphasis-color: var(--fx-text);
+  --bs-heading-color: var(--fx-text);
+  --bs-secondary-color: var(--fx-text-soft);
+  --bs-tertiary-bg: var(--fx-surface-2);
+  --bs-secondary-bg: var(--fx-surface-3);
+  --bs-border-color: var(--fx-border);
+  --bs-primary: var(--fx-primary);
+  --bs-success: var(--fx-success);
+  --bs-warning: var(--fx-warning);
+  --bs-danger: var(--fx-danger);
+  --bs-link-color: var(--fx-primary);
+  --bs-link-hover-color: var(--fx-primary-hover);
+  --bs-focus-ring-color: color-mix(in srgb, var(--fx-primary) 25%, transparent);
+  --bs-form-invalid-color: var(--fx-danger-text);
+  --bs-form-invalid-border-color: var(--fx-danger);
+  --bs-form-valid-color: var(--fx-success-text);
+  --bs-form-valid-border-color: var(--fx-success);
+}
+
+:root,
+[data-bs-theme='light'] {
+  --bs-primary-rgb: 37, 99, 235;
+  --bs-success-rgb: 22, 163, 74;
+  --bs-warning-rgb: 217, 119, 6;
+  --bs-danger-rgb: 220, 38, 38;
+  --bs-link-color-rgb: 37, 99, 235;
+}
+
+[data-bs-theme='dark'] {
+  --bs-primary-rgb: 127, 166, 255;
+  --bs-success-rgb: 34, 197, 94;
+  --bs-warning-rgb: 245, 158, 11;
+  --bs-danger-rgb: 239, 68, 68;
+  --bs-link-color-rgb: 127, 166, 255;
 }

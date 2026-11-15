@@ -1,0 +1,23 @@
+.fx-stepper { padding: 14px 22px 0; background: var(--fx-surface); }
+.fx-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 8px; justify-content: space-between; }
+.fx-steps li { flex: 1; min-width: 0; }
+.fx-steps button { width: 100%; display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 4px 0; color: var(--fx-text-soft); font-weight: 600; font-size: 13px; text-align: left; }
+.fx-step-dot { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--fx-surface-3); color: var(--fx-text-soft); transition: 0.2s; }
+.fx-step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-steps li.active { button { color: var(--fx-ink); } .fx-step-dot { background: var(--fx-blue); color: var(--fx-on-solid); box-shadow: 0 0 0 4px var(--fx-primary-soft); } }
+.fx-steps li.done .fx-step-dot { background: var(--fx-success-strong); color: var(--fx-on-solid); }
+.fx-steps li.error .fx-step-dot { background: var(--fx-rose); color: var(--fx-on-solid); }
+.fx-step-bar { height: 3px; background: var(--fx-surface-3); border-radius: 3px; margin-top: 10px; overflow: hidden; div { height: 100%; background: var(--fx-blue); transition: width 0.3s ease; } }
+.fx-step-count { display: none; font-size: 12px; color: var(--fx-muted); font-weight: 700; padding: 8px 0 2px; }
+@media (max-width: 575px) {
+  .fx-stepper { padding: 12px 16px 0; }
+  .fx-steps li:not(.active) .fx-step-label { display: none; }
+  .fx-steps li:not(.active) { flex: 0 0 auto; }
+  .fx-steps li.active { flex: 1; }
+  .fx-step-count { display: block; }
+  .fx-modal-head, .fx-modal-foot { padding-left: 16px; padding-right: 16px; }
+  .fx-modal .fx-modal-body { padding: 4px 16px 16px; }
+}
+.fx-step-pane { animation: fx-step-in 0.22s ease; }
+@keyframes fx-step-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fx-step-pane { animation: none; } }

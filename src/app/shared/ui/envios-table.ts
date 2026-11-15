@@ -9,6 +9,7 @@ import { AccionesEnvio } from '../../core/services/envio-acciones';
 import { EnvioDetalleModal } from '../../features/envios/envio-detalle-modal';
 import { CorregirDestinoModal } from '../../features/envios/corregir-destino-modal';
 import { CrearEnvio } from '../../features/envios/crear-envio';
+import { Empty } from './empty';
 import { StatusPill } from './ui';
 
 interface Fila {
@@ -19,7 +20,7 @@ interface Fila {
 
 @Component({
   selector: 'fx-envios-table',
-  imports: [StatusPill, DatePipe],
+  imports: [StatusPill, DatePipe, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (envios().length) {
@@ -89,7 +90,7 @@ interface Fila {
                       </button>
                     }
                     @if (rol() === 'cliente' && data.editableCliente(e)) {
-                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="editar(e)" [attr.aria-label]="'Editar ' + e.id" title="Editar envío">
+                      <button type="button" class="btn btn-sm btn-outline-warning" (click)="editar(e)" [attr.aria-label]="'Editar ' + e.id" title="Editar envío">
                         <i class="bi bi-pencil"></i><span class="d-none d-xl-inline">Editar</span>
                       </button>
                       @if (e.estado === 'Borrador') {
@@ -106,7 +107,7 @@ interface Fila {
                       }
                     }
                     @if (rol() === 'admin' && data.puedeRecepcionar(e)) {
-                      <button type="button" class="btn btn-sm btn-primary" (click)="recepcionar(e)" [attr.aria-label]="'Recepcionar ' + e.id" title="Recepcionar en depósito">
+                      <button type="button" class="btn btn-sm btn-success" (click)="recepcionar(e)" [attr.aria-label]="'Recepcionar ' + e.id" title="Recepcionar en depósito">
                         <i class="bi bi-box-arrow-in-down"></i><span class="d-none d-xl-inline">Recepcionar</span>
                       </button>
                     }
@@ -125,7 +126,7 @@ interface Fila {
                       }
                     }
                     @if (rol() === 'admin' && data.puedeObservar(e)) {
-                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="observar(e)" [attr.aria-label]="'Reportar diferencia en ' + e.id" title="Reportar diferencia">
+                      <button type="button" class="btn btn-sm btn-outline-warning" (click)="observar(e)" [attr.aria-label]="'Reportar diferencia en ' + e.id" title="Reportar diferencia">
                         <i class="bi bi-exclamation-triangle"></i><span class="d-none d-xl-inline">Diferencia</span>
                       </button>
                     }
@@ -135,12 +136,12 @@ interface Fila {
                       </button>
                     }
                     @if (rol() === 'admin' && e.estado === 'Incidencia') {
-                      <button type="button" class="btn btn-sm btn-primary" (click)="reingresar(e)" [attr.aria-label]="'Confirmar reingreso de ' + e.id" title="Confirmar reingreso al depósito">
+                      <button type="button" class="btn btn-sm btn-success" (click)="reingresar(e)" [attr.aria-label]="'Confirmar reingreso de ' + e.id" title="Confirmar reingreso al depósito">
                         <i class="bi bi-box-arrow-in-down"></i><span class="d-none d-xl-inline">Reingreso</span>
                       </button>
                     }
                     @if (rol() === 'cliente' && e.estado === 'En devolución') {
-                      <button type="button" class="btn btn-sm btn-primary" (click)="confirmarDevolucion(e)" [attr.aria-label]="'Confirmar que recibí ' + e.id" title="Confirmar que recibí la devolución">
+                      <button type="button" class="btn btn-sm btn-success" (click)="confirmarDevolucion(e)" [attr.aria-label]="'Confirmar que recibí ' + e.id" title="Confirmar que recibí la devolución">
                         <i class="bi bi-check2-circle"></i><span class="d-none d-xl-inline">Recibí</span>
                       </button>
                     }
@@ -165,10 +166,10 @@ interface Fila {
                       </button>
                     }
                     @if (rol() === 'mensajero' && e.estado === 'En reparto') {
-                      <button type="button" class="btn btn-sm btn-primary" (click)="entregar(e)" [attr.aria-label]="'Marcar ' + e.id + ' como entregado'" title="Marcar como entregado">
+                      <button type="button" class="btn btn-sm btn-success" (click)="entregar(e)" [attr.aria-label]="'Marcar ' + e.id + ' como entregado'" title="Marcar como entregado">
                         <i class="bi bi-check2-circle"></i><span class="d-none d-xl-inline">Entregado</span>
                       </button>
-                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="incidencia(e)" [attr.aria-label]="'Reportar incidencia en ' + e.id" title="Reportar incidencia">
+                      <button type="button" class="btn btn-sm btn-outline-warning" (click)="incidencia(e)" [attr.aria-label]="'Reportar incidencia en ' + e.id" title="Reportar incidencia">
                         <i class="bi bi-exclamation-triangle"></i><span class="d-none d-xl-inline">Incidencia</span>
                       </button>
                     }
@@ -181,9 +182,7 @@ interface Fila {
         </table>
       </div>
     } @else {
-      <div class="text-center fx-muted py-5 px-3">
-        <i class="bi bi-inbox fs-2 d-block mb-2"></i>No hay envíos para mostrar.
-      </div>
+      <fx-empty icono="inbox" titulo="No hay envíos para mostrar" descripcion="Cuando haya movimientos, los vas a ver acá." />
     }
   `,
 })

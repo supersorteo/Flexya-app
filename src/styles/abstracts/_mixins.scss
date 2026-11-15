@@ -1,0 +1,6 @@
+/* Tarjeta con borde en degradado: relleno en padding-box y degradado en border-box */
+@mixin tarjeta {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--fx-surface), var(--fx-surface)) padding-box, var(--fx-card-grad) border-box;
+  box-shadow: var(--fx-shadow);
+}

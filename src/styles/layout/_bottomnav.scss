@@ -1,0 +1,31 @@
+.fx-bottomnav {
+  position: fixed; inset: auto 0 0 0; height: var(--fx-bottomnav-h); background: var(--fx-surface);
+  border-top: 1px solid var(--fx-border); display: flex; z-index: var(--fx-z-bottomnav);
+  padding-bottom: env(safe-area-inset-bottom); box-sizing: content-box;
+  a, button {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    color: var(--fx-text-soft); font-size: var(--fx-fs-xs); font-weight: 600; text-decoration: none; background: none; border: 0; padding: 0 2px;
+    span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    i { font-size: 20px; display: grid; place-items: center; width: 52px; height: 28px; border-radius: var(--fx-r-pill); transition: background-color var(--fx-dur-fast) var(--fx-ease); }
+    &.active { color: var(--fx-primary); i { background: var(--fx-primary-soft); } }
+  }
+}
+
+.fx-sheet-fondo { position: fixed; inset: 0; z-index: calc(var(--fx-z-bottomnav) + 1); background: rgba(8, 17, 31, 0.55); }
+.fx-sheet {
+  position: fixed; inset: auto 0 0 0; z-index: calc(var(--fx-z-bottomnav) + 2); max-height: 82dvh; overflow-y: auto;
+  background: var(--fx-surface); border-radius: var(--fx-r-xl) var(--fx-r-xl) 0 0; box-shadow: var(--fx-sh-3);
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); outline: 0;
+  animation: fx-sheet-sube var(--fx-dur-base) var(--fx-ease);
+}
+.fx-sheet-asa { display: block; width: 40px; height: 4px; margin: 4px auto 12px; border-radius: 4px; background: var(--fx-border-strong); }
+.fx-sheet-lista { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.fx-sheet-lista a, .fx-sheet-lista button {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 52px; padding: 0 14px; border: 0; border-radius: var(--fx-r-md);
+  background: transparent; color: var(--fx-text); font: inherit; font-weight: 600; text-align: left; text-decoration: none;
+  i { font-size: 20px; color: var(--fx-text-soft); }
+  &:hover, &.active { background: var(--fx-surface-3); }
+  &.active { color: var(--fx-primary); i { color: var(--fx-primary); } }
+}
+.fx-sheet-lista .sep { margin: 6px 0; border-top: 1px solid var(--fx-divider); }
+@keyframes fx-sheet-sube { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }

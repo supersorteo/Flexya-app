@@ -1,0 +1,55 @@
+@use '../abstracts/breakpoints' as *;
+
+.fx-table {
+  width: 100%; border-collapse: collapse;
+  th {
+    text-align: left; color: var(--fx-text); font-size: var(--fx-fs-sm); font-weight: 700;
+    padding: 12px 16px; background: var(--fx-th-bg); border-top: 1px solid var(--fx-border-strong); border-bottom: 2px solid var(--fx-border-strong); white-space: nowrap;
+  }
+  td { padding: 14px 16px; border-bottom: 1px solid var(--fx-border); font-size: var(--fx-fs-md); vertical-align: middle; font-variant-numeric: tabular-nums; }
+  tbody tr:nth-child(even) td { background: var(--fx-row-alt); }
+  tbody tr:hover td { background: var(--fx-primary-soft); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .fx-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; .form-select { width: auto; min-height: 36px; } .btn { min-height: 36px; min-width: 36px; } }
+}
+
+@media (max-width: #{$bp-md - 1px}) {
+  .fx-table:not(.fx-table--filas) {
+    thead { display: none; }
+    tbody, tr, td { display: block; width: 100%; }
+    tr { padding: 12px 16px; border-bottom: 1px solid var(--fx-line); }
+    td {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: 0; text-align: right;
+      &::before { content: attr(data-label); color: var(--fx-muted); font-size: 12px; font-weight: 700; text-align: left; flex: none; }
+    }
+    .fx-actions { justify-content: flex-end; &::before { display: none; } .form-select { flex: 1; } }
+    tr.fx-empty td::before { display: none; }
+  }
+}
+
+.fx-sub { display: block; font-size: 12px; color: var(--fx-muted); margin-top: 2px; }
+.fx-sub--corto { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Tabla en filas con desplazamiento horizontal (no pasa a tarjetas en celular) */
+.fx-table-scroll {
+  overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; border-top: 0;
+  /* sombras en los bordes que insinúan que hay más contenido al deslizar */
+  background:
+    linear-gradient(to right, var(--fx-surface) 30%, transparent) left / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--fx-surface) 30%, transparent) right / 28px 100% no-repeat local,
+    linear-gradient(to right, color-mix(in srgb, var(--fx-text) 14%, transparent), transparent) left / 10px 100% no-repeat scroll,
+    linear-gradient(to left, color-mix(in srgb, var(--fx-text) 14%, transparent), transparent) right / 10px 100% no-repeat scroll;
+  &:focus-visible { outline-offset: -2px; }
+}
+.fx-table--filas {
+  min-width: 1040px;
+  th, td { white-space: nowrap; }
+  td { padding-block: 15px; }
+  .fx-actions { flex-wrap: nowrap; }
+}
+
+.fx-grupo-fila td { background: var(--fx-primary-soft); padding: 6px 10px; }
+.fx-grupo { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.fx-grupo-titulo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border: 0; background: transparent; padding: 2px 0; text-align: left; }
+
+.fx-table tbody tr.fx-grupo-fila td { background: var(--fx-primary-soft); }

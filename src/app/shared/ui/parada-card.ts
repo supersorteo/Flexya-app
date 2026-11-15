@@ -5,7 +5,7 @@ import { enCursoMensajero, Envio } from '../../core/models';
 import { AccionesMensajero } from './acciones-mensajero';
 import { DataService } from '../../core/services/data.service';
 import { mapaLink, telefonoLink, whatsappLink } from '../util/contacto';
-import { StatusPill } from './ui';
+import { slugEstado, StatusPill } from './ui';
 
 @Component({
   selector: 'fx-parada',
@@ -13,7 +13,7 @@ import { StatusPill } from './ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let e = envio();
-    <article class="fx-parada" [class.cerrada]="!activo()">
+    <article [class]="'fx-parada riel-' + slug()" [class.cerrada]="!activo()">
       <header class="fx-parada-head">
         <a class="fx-parada-id" [routerLink]="['/mensajero', 'envios', e.id]">{{ e.id }}</a>
         <fx-status [estado]="e.estado" />
@@ -49,16 +49,16 @@ import { StatusPill } from './ui';
 
       <div class="fx-parada-contacto">
         @if (tel(); as href) {
-          <a class="btn btn-outline-secondary" [href]="href" [attr.aria-label]="'Llamar a ' + e.destinatario"><i class="bi bi-telephone"></i>Llamar</a>
+          <a class="btn fx-circulo" [href]="href" [attr.aria-label]="'Llamar a ' + e.destinatario" title="Llamar"><i class="bi bi-telephone-fill"></i></a>
         }
         @if (wa(); as href) {
-          <a class="btn btn-outline-secondary" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="'WhatsApp a ' + e.destinatario"><i class="bi bi-whatsapp"></i>WhatsApp</a>
+          <a class="btn fx-circulo fx-circulo--wa" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="'WhatsApp a ' + e.destinatario" title="WhatsApp"><i class="bi bi-whatsapp"></i></a>
         }
-        <a class="btn btn-outline-secondary" [href]="mapa()" target="_blank" rel="noopener" aria-label="Cómo llegar"><i class="bi bi-signpost-split"></i>Mapa</a>
+        <a class="btn fx-circulo" [href]="mapa()" target="_blank" rel="noopener" aria-label="Cómo llegar" title="Cómo llegar"><i class="bi bi-signpost-split-fill"></i></a>
+        <a class="fx-parada-detalle" [routerLink]="['/mensajero', 'envios', e.id]">Ver detalle<i class="bi bi-chevron-right" aria-hidden="true"></i></a>
       </div>
 
       <fx-acciones-mensajero [envio]="e" clase="fx-parada-acciones" />
-      <a class="fx-parada-detalle" [routerLink]="['/mensajero', 'envios', e.id]">Ver detalle<i class="bi bi-chevron-right" aria-hidden="true"></i></a>
     </article>
   `,
 })
@@ -72,5 +72,6 @@ export class ParadaCard {
   );
   protected readonly mapa = computed(() => mapaLink(this.envio().direccion, this.envio().localidad));
 
+  protected readonly slug = computed(() => slugEstado(this.envio().estado));
   protected readonly activo = computed(() => enCursoMensajero(this.envio()));
 }
