@@ -28,7 +28,7 @@ import { ProductoModal } from './producto-modal';
       <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Tabla de productos">
         <table class="fx-table fx-table--filas">
           <thead>
-            <tr><th>Producto</th><th>Medidas (alto × ancho × largo)</th><th>Peso</th><th>Volumen</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr>
+            <tr><th>Producto</th><th>Stock</th><th>Precio</th><th>Medidas (alto × ancho × largo)</th><th>Peso</th><th>Volumen</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             @for (p of filas(); track p.id) {
@@ -36,6 +36,17 @@ import { ProductoModal } from './producto-modal';
                 <td data-label="Producto">
                   <strong>{{ p.nombre }}</strong>
                   @if (p.descripcion) { <span class="fx-sub fx-sub--corto">{{ p.descripcion }}</span> }
+                </td>
+                <td data-label="Stock">
+                  @if (p.stock === 0) {
+                    <span class="badge text-bg-danger">Agotado</span>
+                  } @else {
+                    <strong>{{ p.stock | number: '1.0-0' }}</strong>
+                    @if (p.stock <= stockBajo) { <span class="badge text-bg-warning ms-1">Bajo</span> }
+                  }
+                </td>
+                <td data-label="Precio">
+                  @if (p.precio !== null) { <strong>{{ p.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-2' }}</strong> } @else { <span class="fx-muted">—</span> }
                 </td>
                 <td data-label="Medidas">
                   @if (p.alto !== null || p.ancho !== null || p.largo !== null) {
@@ -49,17 +60,6 @@ import { ProductoModal } from './producto-modal';
                 </td>
                 <td data-label="Volumen">
                   @if (volumen(p); as v) { {{ v | number: '1.0-1' }} cm³ } @else { <span class="fx-muted">—</span> }
-                </td>
-                <td data-label="Precio">
-                  @if (p.precio !== null) { <strong>{{ p.precio | currency: 'ARS' : 'symbol-narrow' : '1.2-2' }}</strong> } @else { <span class="fx-muted">—</span> }
-                </td>
-                <td data-label="Stock">
-                  @if (p.stock === 0) {
-                    <span class="badge text-bg-danger">Agotado</span>
-                  } @else {
-                    <strong>{{ p.stock | number: '1.0-0' }}</strong>
-                    @if (p.stock <= stockBajo) { <span class="badge text-bg-warning ms-1">Bajo</span> }
-                  }
                 </td>
                 <td data-label="Acciones" class="fx-actions">
                   <button type="button" class="btn btn-sm btn-outline-secondary" (click)="movimientos(p)" [attr.aria-label]="'Movimientos de ' + p.nombre" title="Movimientos de stock">

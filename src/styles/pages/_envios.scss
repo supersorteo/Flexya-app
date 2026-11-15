@@ -50,3 +50,10 @@
 .fx-excepcion { display: grid; gap: 4px; padding: 10px; border: 1px solid var(--fx-line); border-radius: 10px; }
 .fx-excepcion label { display: flex; flex-direction: column; }
 .fx-excepcion label small { color: var(--bs-secondary-color); }
+
+/* En teléfono los tres pasos son una franja compacta: solo el título de cada uno */
+@media (max-width: 575px) {
+  .fx-pasos-pago { gap: 6px; }
+  .fx-pasos-pago li { padding: 8px 12px; }
+  .fx-pasos-pago small { display: none; }
+}

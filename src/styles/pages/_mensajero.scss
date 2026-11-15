@@ -17,7 +17,7 @@
 .fx-parada-id { font-weight: 700; font-size: var(--fx-fs-sm); color: var(--fx-primary); text-decoration: none; font-variant-numeric: tabular-nums; }
 .fx-parada-nombre { font-family: var(--fx-font-display); font-size: 21px; line-height: 1.2; letter-spacing: -0.02em; margin: 4px 0 0; }
 .fx-parada-linea { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: var(--fx-fs-md); color: var(--fx-text); i { margin-top: 3px; color: var(--fx-primary); } &.fx-muted { color: var(--fx-text-soft); i { color: inherit; } } }
-.fx-parada-nota { display: flex; gap: 8px; margin: 2px 0 0; padding: 10px 12px; border-radius: var(--fx-r-md); background: var(--fx-warning-soft); color: var(--fx-warning-text); font-size: var(--fx-fs-sm); font-weight: 600; }
+.fx-parada-nota { @include aviso(warn); margin: 2px 0 0; font-weight: 600; i { color: var(--fx-warning); margin-top: 2px; } }
 .fx-parada-contacto { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .fx-circulo { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; border-radius: 50%; border: 1px solid var(--fx-border-strong); background: var(--fx-surface-2); color: var(--fx-primary); font-size: 20px;
   &:hover, &:active { background: var(--fx-primary-soft); color: var(--fx-primary); border-color: var(--fx-primary); }
@@ -85,3 +85,17 @@
 /* Barra de período global, debajo de la barra superior */
 .fx-periodobar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 16px; background: var(--fx-surface); border-bottom: 2px solid var(--fx-border); position: sticky; top: var(--fx-topbar-h); z-index: 4; }
 .fx-viendo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--fx-r-md); background: var(--fx-warning-soft); border: 1px solid var(--fx-warning-border); color: var(--fx-warning-text); font-size: var(--fx-fs-sm); i { font-size: 16px; } span { flex: 1 1 200px; } }
+
+/* Barra de período: compacta en teléfono (no queda fija) y fija solo en pantallas grandes */
+.fx-periodobar { position: static; }
+@media (min-width: 992px) { .fx-periodobar { position: sticky; } }
+@media (max-width: 575px) {
+  .fx-periodobar { padding: 10px 16px 12px; gap: 8px; }
+  .fx-periodo { flex-direction: column; align-items: stretch; width: 100%; gap: 8px; }
+  .fx-tabs--periodo { width: 100%; button { flex: 1 1 0; } }
+  .fx-periodo-nav { width: 100%; justify-content: space-between; }
+  .fx-periodo-etiqueta { flex: 1; min-width: 0; }
+  .fx-periodo-nav .btn { min-width: 44px; }
+}
+fx-periodo { display: block; }
+@media (max-width: 575px) { fx-periodo { width: 100%; } }

@@ -168,7 +168,7 @@ export class Dashboard {
   }
 
   protected readonly eyebrow = computed(
-    () => ({ admin: 'OPERACIONES · HOY', cliente: 'CUENTA', mensajero: 'JORNADA · HOY' })[this.user()?.rol ?? 'cliente'],
+    () => ({ admin: 'Operaciones', cliente: 'Mi cuenta', mensajero: 'Jornada' })[this.user()?.rol ?? 'cliente'],
   );
   protected readonly titulo = computed(() => {
     const u = this.user();

@@ -18,7 +18,7 @@ import { StatusPill } from '../../shared/ui/ui';
     @if (envio(); as e) {
       <div class="fx-page-header">
         <div>
-          <div class="fx-eyebrow">DETALLE DE ENTREGA</div>
+          <div class="fx-eyebrow">Detalle de entrega</div>
           <h1>{{ e.id }}</h1>
         </div>
         <fx-status [estado]="e.estado" />

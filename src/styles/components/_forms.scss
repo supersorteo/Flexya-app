@@ -1,3 +1,4 @@
+@use '../abstracts/mixins' as *;
 .fx-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 @media (max-width: 575px) { .fx-plans { grid-template-columns: 1fr; } }
 .fx-plan {
@@ -39,11 +40,10 @@
 }
 .fx-unverified { color: var(--fx-amber); margin-left: 4px; }
 
-.fx-verif { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; padding: 11px 14px; border-radius: 12px; font-size: 13px; background: var(--fx-surface-3); color: var(--fx-text-soft); animation: fx-step-in 0.2s ease;
-  i { font-size: 18px; margin-top: 1px; } strong { display: block; color: var(--fx-ink); } small { display: block; font-size: 12px; line-height: 1.4; }
-  &.ok { background: var(--fx-teal-soft); color: var(--fx-success-text); i { color: var(--fx-teal); } }
-  &.warn { background: var(--fx-amber-soft); color: var(--fx-warning-text); i { color: var(--fx-amber); } }
-  &.info { background: var(--fx-surface-3); }
+.fx-verif { @include aviso(info); align-items: flex-start; margin-top: 16px; animation: fx-step-in 0.2s ease;
+  i { font-size: 18px; margin-top: 1px; color: var(--fx-primary); } strong { display: block; color: var(--fx-text); } small { display: block; font-size: var(--fx-fs-xs); line-height: 1.4; }
+  &.ok { @include aviso(ok); align-items: flex-start; i { color: var(--fx-success); } }
+  &.warn { @include aviso(warn); align-items: flex-start; i { color: var(--fx-warning); } }
 }
 .fx-confirm { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 14px; border: 1px solid var(--fx-line); border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--fx-surface);
   input { width: 18px; height: 18px; margin: 0; flex: none; }

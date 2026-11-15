@@ -103,7 +103,7 @@ export function etiquetaRango(r: Rango, ahora: Date): string {
 export const COMPARACION: Record<Nivel, string> = { dia: 'ayer', semana: 'la semana pasada', mes: 'el mes pasado' };
 
 export function textoVariacion(actual: number, anterior: number, nivel: Nivel): string {
-  if (!anterior) return actual ? `sin datos ${nivel === 'dia' ? 'ayer' : 'antes'}` : '';
+  if (!anterior) return '';
   const pct = Math.round(((actual - anterior) / anterior) * 100);
   return `${pct > 0 ? '+' : ''}${pct}% vs ${COMPARACION[nivel]}`;
 }
@@ -150,7 +150,7 @@ export function actividadDelPeriodo(envios: Envio[], periodo: Periodo | Rango, a
     const cierre = fechaCierre(e);
     const cerradoDentro = cierre >= desde && cierre < hasta;
     if (!actual) return cerradoDentro || (tiempo(e.creadoEn) >= desde && tiempo(e.creadoEn) < hasta);
-    if (estaAbierto(e)) return diaMs(diaDeTrabajo(e)) < hasta;
+    if (estaAbierto(e)) return diaMs(diaDeTrabajo(e)) < hasta || (tiempo(e.creadoEn) >= desde && tiempo(e.creadoEn) < hasta);
     return cerradoDentro;
   });
   return lista.sort((a, b) => Number(esArrastrado(b, ahora)) - Number(esArrastrado(a, ahora)) || tiempo(b.creadoEn) - tiempo(a.creadoEn));

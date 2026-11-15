@@ -49,7 +49,7 @@ describe('Actividad del período', () => {
     const deHoy = envio({ creado: 0 });
     const cerradoHoy = envio({ creado: 1, entregado: 0 });
     const cerradoAyer = envio({ creado: 2, entregado: 1 });
-    const futuro = envio({ creado: 0, fechaRetiro: ymd(-2) });
+    const futuro = envio({ creado: 1, fechaRetiro: ymd(-2) });
     const borrador = envio({ creado: 0, estado: 'Borrador' });
     const ids = actividadDelPeriodo([deHoy, cerradoAyer, borrador, cerradoHoy, futuro, arrastrado], 'hoy', AHORA).map((e) => e.id);
     expect(ids).toEqual([arrastrado.id, deHoy.id, cerradoHoy.id]);
@@ -58,7 +58,7 @@ describe('Actividad del período', () => {
   it('en 7 días suma lo cerrado esos días y en "Todo" incluye lo programado a futuro', () => {
     const cerradoAyer = envio({ creado: 2, entregado: 1 });
     const viejo = envio({ creado: 20, entregado: 20 });
-    const futuro = envio({ creado: 0, fechaRetiro: ymd(-2) });
+    const futuro = envio({ creado: 8, fechaRetiro: ymd(-2) });
     expect(actividadDelPeriodo([cerradoAyer, viejo, futuro], '7d', AHORA).map((e) => e.id)).toEqual([cerradoAyer.id]);
     expect(actividadDelPeriodo([cerradoAyer, viejo, futuro], 'todo', AHORA)).toHaveLength(3);
   });
@@ -164,7 +164,7 @@ describe('Períodos de calendario', () => {
   it('compara con el período anterior', () => {
     expect(textoVariacion(12, 10, 'semana')).toBe('+20% vs la semana pasada');
     expect(textoVariacion(5, 10, 'dia')).toBe('-50% vs ayer');
-    expect(textoVariacion(3, 0, 'mes')).toBe('sin datos antes');
+    expect(textoVariacion(3, 0, 'mes')).toBe('');
     expect(textoVariacion(0, 0, 'mes')).toBe('');
   });
 });
@@ -177,7 +177,8 @@ describe('El día de trabajo depende de si ya se retiró', () => {
   });
 
   it('antes del retiro, programado a futuro no aparece hoy; y uno viejo ya retirado sí es arrastrado', () => {
-    expect(actividadDelPeriodo([envio({ creado: 0, fechaRetiro: ymd(-2) })], 'hoy', AHORA)).toHaveLength(0);
+    expect(actividadDelPeriodo([envio({ creado: 1, fechaRetiro: ymd(-2) })], 'hoy', AHORA)).toHaveLength(0);
+    expect(actividadDelPeriodo([envio({ creado: 0, fechaRetiro: ymd(-2) })], 'hoy', AHORA)).toHaveLength(1);
     expect(esArrastrado(envio({ creado: 3, estado: 'Retirado' as Envio['estado'], fechaRetiro: ymd(3) }), AHORA)).toBe(true);
   });
 });

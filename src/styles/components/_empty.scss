@@ -10,3 +10,5 @@
   border: 1px dashed var(--fx-primary-border);
 }
 .fx-empty-titulo { color: var(--fx-text); font-family: var(--fx-font-display); font-size: var(--fx-fs-lg); font-weight: 700; }
+
+.fx-panel .fx-empty { padding: 22px 16px; .fx-empty-icono { width: 48px; height: 48px; font-size: 22px; } .fx-empty-titulo { font-size: var(--fx-fs-md); } }

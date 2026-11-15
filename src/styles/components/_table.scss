@@ -53,3 +53,17 @@
 .fx-grupo-titulo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border: 0; background: transparent; padding: 2px 0; text-align: left; }
 
 .fx-table tbody tr.fx-grupo-fila td { background: var(--fx-primary-soft); }
+
+/* En teléfono el detalle del envío se acomoda en líneas para que el Estado entre en pantalla junto al número */
+.fx-table--filas td:first-child .fx-sub { white-space: normal; max-width: 190px; }
+
+/* En teléfono la columna de acciones queda fija a la derecha: los botones siempre están a mano aunque la tabla se deslice */
+@media (max-width: 767px) {
+  .fx-table--filas td.fx-actions, .fx-table--filas:has(td.fx-actions) th:last-child {
+    position: sticky; right: 0; z-index: 2; box-shadow: -8px 0 10px -8px color-mix(in srgb, var(--fx-text) 35%, transparent);
+  }
+  .fx-table--filas td.fx-actions { display: table-cell; vertical-align: middle; white-space: nowrap; background: var(--fx-surface); > * + * { margin-left: 8px; } }
+  .fx-table--filas tbody tr:nth-child(even) td.fx-actions { background: var(--fx-row-alt); }
+  .fx-table--filas tbody tr:hover td.fx-actions { background: var(--fx-primary-soft); }
+  .fx-table--filas:has(td.fx-actions) th:last-child { background: var(--fx-th-bg); }
+}

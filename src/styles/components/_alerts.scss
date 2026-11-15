@@ -1,10 +1,8 @@
+@use '../abstracts/mixins' as *;
 /* Alertas del superadmin */
 .fx-alertas-lista { list-style: none; margin: 0; padding: 0 12px 12px; display: grid; gap: 8px; }
-.fx-alerta { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--fx-line); background: var(--fx-surface); flex-wrap: wrap; }
+.fx-alerta { @include aviso(info); align-items: center; flex-wrap: wrap; }
 .fx-alerta > span { flex: 1; min-width: 180px; }
-.fx-alerta > i { font-size: 18px; }
-.fx-alerta.tono-danger { background: var(--fx-danger-soft); border-color: var(--fx-danger-border); }
-.fx-alerta.tono-danger > i { color: var(--fx-danger-text); }
-.fx-alerta.tono-warn { background: var(--fx-warning-soft); border-color: var(--fx-warning-border); }
-.fx-alerta.tono-warn > i { color: var(--fx-warning-text); }
-.fx-alerta.tono-info > i { color: var(--fx-primary); }
+.fx-alerta > i { font-size: 18px; color: var(--fx-primary); }
+.fx-alerta.tono-danger { @include aviso(danger); align-items: center; flex-wrap: wrap; > i { color: var(--fx-danger); } }
+.fx-alerta.tono-warn { @include aviso(warn); align-items: center; flex-wrap: wrap; > i { color: var(--fx-warning); } }

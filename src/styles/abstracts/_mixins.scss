@@ -4,3 +4,12 @@
   background: linear-gradient(var(--fx-surface), var(--fx-surface)) padding-box, var(--fx-card-grad) border-box;
   box-shadow: var(--fx-shadow);
 }
+
+/* Aviso: un solo diseño para todo mensaje dentro de una pantalla (barra lateral de color, fondo suave, ícono del tono) */
+@mixin aviso($tono) {
+  display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--fx-r-md); font-size: var(--fx-fs-sm);
+  @if $tono == ok { background: var(--fx-success-soft); color: var(--fx-success-text); border: 1px solid color-mix(in srgb, var(--fx-success) 40%, transparent); border-left: 4px solid var(--fx-success); }
+  @else if $tono == warn { background: var(--fx-warning-soft); color: var(--fx-warning-text); border: 1px solid var(--fx-warning-border); border-left: 4px solid var(--fx-warning); }
+  @else if $tono == danger { background: var(--fx-danger-soft); color: var(--fx-danger-text); border: 1px solid var(--fx-danger-border); border-left: 4px solid var(--fx-danger); }
+  @else { background: var(--fx-primary-soft); color: var(--fx-text); border: 1px solid var(--fx-primary-border); border-left: 4px solid var(--fx-primary); }
+}

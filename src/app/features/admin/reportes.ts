@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { actividadDelPeriodo } from '../../core/periodos';
+import { slugEstado } from '../../shared/ui/ui';
 import { DataService } from '../../core/services/data.service';
 import { PeriodoService } from '../../core/services/periodo.service';
 import { calcularResumen } from '../dashboard/resumen-negocio';
@@ -41,7 +42,7 @@ function barras(conteo: Map<string, number>): Barra[] {
               @for (b of g.items; track b.label) {
                 <li>
                   <div class="d-flex justify-content-between small"><span>{{ b.label }}</span><strong>{{ b.valor }}</strong></div>
-                  <div class="fx-bar"><div [style.width.%]="b.pct"></div></div>
+                  <div class="fx-bar"><div [style.width.%]="b.pct" [style.background]="g.titulo === 'Envíos por estado' ? colorEstado(b.label) : null"></div></div>
                 </li>
               } @empty {
                 <li class="fx-muted small">Sin datos todavía.</li>
@@ -61,6 +62,10 @@ export class Reportes {
   private readonly resumen = computed(() =>
     calcularResumen(this.data.envios(), [], this.per.rango(), new Date(), { cliente: () => '', mensajero: () => '', zona: () => '' }),
   );
+
+  protected colorEstado(estado: string): string {
+    return `var(--fx-st-${slugEstado(estado)}-fg)`;
+  }
 
   protected readonly total = computed(() => this.delPeriodo().length);
   protected readonly incidencias = computed(() => this.resumen().incidencias);

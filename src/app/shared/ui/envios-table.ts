@@ -30,6 +30,7 @@ interface Fila {
           <thead>
             <tr>
               <th>Envío</th>
+              <th>Estado</th>
               @if (rol() !== 'cliente') {
                 <th>Cliente</th>
               }
@@ -39,7 +40,6 @@ interface Fila {
               @if (rol() === 'admin') {
                 <th>Mensajero</th>
               }
-              <th>Estado</th>
               @if (acciones()) {
                 <th>Acciones</th>
               }
@@ -69,6 +69,7 @@ interface Fila {
               @let e = f.envio!;
               <tr>
                 <td data-label="Envío"><strong>{{ e.id }}</strong><span class="fx-sub">{{ detalle(e) }}</span>@if (arrastre(e); as a) {<span class="fx-arrastre"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ a }}</span>}</td>
+                <td data-label="Estado"><fx-status [estado]="e.estado" /></td>
                 @if (rol() !== 'cliente') {
                   <td data-label="Cliente">{{ data.nombreCliente(e.clienteId) }}</td>
                 }
@@ -82,7 +83,6 @@ interface Fila {
                 @if (rol() === 'admin') {
                   <td data-label="Mensajero">{{ data.nombreMensajero(e.mensajeroId) }}</td>
                 }
-                <td data-label="Estado"><fx-status [estado]="e.estado" /></td>
                 @if (acciones()) {
                   <td data-label="Acciones" class="fx-actions">
                     @if (rol() !== 'mensajero') {

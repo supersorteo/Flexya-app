@@ -262,3 +262,9 @@
   --bs-offcanvas-bg: var(--fx-surface);
   --bs-offcanvas-color: var(--fx-text);
 }
+
+/* Insignias con los colores del tema (Bootstrap trae las suyas, fijas) */
+.badge.text-bg-danger { background-color: var(--fx-danger-soft) !important; color: var(--fx-danger-text) !important; border: 1px solid var(--fx-danger-border); }
+.badge.text-bg-warning { background-color: var(--fx-warning-soft) !important; color: var(--fx-warning-text) !important; border: 1px solid var(--fx-warning-border); }
+.badge.text-bg-success { background-color: var(--fx-success-soft) !important; color: var(--fx-success-text) !important; border: 1px solid var(--fx-success); }
+.badge { font-weight: 700; }

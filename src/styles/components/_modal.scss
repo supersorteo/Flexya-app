@@ -45,3 +45,21 @@
 .fx-modal .input-group > .fx-suffix { border-left: 0; border-right: 1px solid var(--fx-input-border); border-radius: 0 10px 10px 0; min-width: 44px; justify-content: center; }
 .fx-modal .input-group:has(.fx-suffix) > .form-control { border-radius: 0; border-right: 0; }
 .fx-modal .input-group > .form-control.fx-medida { border-left: 1px solid var(--fx-input-border); border-radius: 10px 0 0 10px; }
+
+/* En teléfono el modal sube desde abajo como una hoja: más cómodo para el pulgar y deja ver el fondo */
+@media (max-width: 575px) {
+  .modal .fx-modal.modal-dialog {
+    position: fixed; inset: auto 0 0 0; width: 100%; max-width: none; margin: 0; min-height: 0; height: auto; max-height: 94dvh;
+    align-items: flex-end;
+  }
+  .modal.fade .fx-modal.modal-dialog { transform: translateY(100%); transition: transform 0.3s var(--fx-ease); }
+  .modal.show .fx-modal.modal-dialog { transform: none; }
+  .fx-modal .modal-content, .fx-modal.modal-dialog-scrollable .modal-content {
+    width: 100%; max-height: 94dvh; border-radius: 22px 22px 0 0; border-width: 2px 0 0; box-shadow: 0 -12px 40px rgba(12, 26, 48, 0.35);
+  }
+  .fx-modal .modal-content::before {
+    content: ''; flex: none; width: 44px; height: 5px; margin: 8px auto 0; border-radius: 999px; background: var(--fx-border-strong);
+  }
+  .fx-modal-foot { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { .modal.fade .fx-modal.modal-dialog { transition: none; } }

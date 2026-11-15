@@ -19,3 +19,11 @@
 
 .fx-kpi-link { display: block; color: inherit; text-decoration: none; border-radius: var(--fx-r-lg); }
 .fx-kpi-link:hover .fx-kpi, .fx-kpi-link:focus-visible .fx-kpi { border-color: var(--fx-primary); }
+
+/* En teléfono las tarjetas de cifras son más compactas: caben más indicadores por pantalla sin perder legibilidad */
+@media (max-width: 575px) {
+  .fx-kpi-grid { gap: 10px; margin-bottom: 16px; }
+  .fx-kpi { padding: 12px 14px; }
+  .fx-kpi-value { font-size: 24px; margin: 6px 0 2px; }
+  .fx-kpi-icon { width: 28px; height: 28px; font-size: 14px; }
+}
