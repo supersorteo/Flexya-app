@@ -31,11 +31,14 @@ import { StatusPill } from './ui';
       @if (e.estado === 'Incidencia') {
         <p class="fx-parada-nota"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>Llevá el paquete al depósito para que lo reciban.</p>
       }
+      @if (e.estado === 'Retirado' && e.retiro === 'recoleccion' && !e.entregadoEnDepositoEn) {
+        <p class="fx-parada-nota"><i class="bi bi-building" aria-hidden="true"></i>Llevá el paquete al depósito para que lo reciban.</p>
+      }
       @if (e.estado === 'En devolución') {
         <p class="fx-parada-linea"><i class="bi bi-arrow-return-left" aria-hidden="true"></i><span>Devolver al cliente en: <strong>{{ data.domicilioCliente(e.clienteId) || 'su domicilio' }}</strong></span></p>
       }
       @if (e.estado === 'Retiro asignado') {
-        <p class="fx-parada-linea"><i class="bi bi-house-door" aria-hidden="true"></i><span>Retirar en: <strong>{{ e.origen || 'domicilio del cliente' }}</strong>@if (e.fechaRetiro) { · {{ e.fechaRetiro | date: 'dd/MM' }}{{ e.franja ? ' ' + (e.franja === 'manana' ? 'a la mañana' : 'a la tarde') : '' }} }@if (data.paquetesDelRetiro(e, 'Retiro asignado').length > 1) { · retiro de {{ data.paquetesDelRetiro(e, 'Retiro asignado').length }} paquetes }</span></p>
+        <p class="fx-parada-linea"><i class="bi bi-house-door" aria-hidden="true"></i><span>Retirar en: <strong>{{ e.origen || 'domicilio del cliente' }}</strong>@if (e.retiro === 'recoleccion') { y llevar al depósito }@if (e.fechaRetiro) { · {{ e.fechaRetiro | date: 'dd/MM' }}{{ e.franja ? ' ' + (e.franja === 'manana' ? 'a la mañana' : 'a la tarde') : '' }} }@if (data.paquetesDelRetiro(e, 'Retiro asignado').length > 1) { · retiro de {{ data.paquetesDelRetiro(e, 'Retiro asignado').length }} paquetes }</span></p>
       }
       @if (e.nota) {
         <p class="fx-parada-nota"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>{{ e.nota }}</p>

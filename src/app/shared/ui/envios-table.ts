@@ -105,7 +105,7 @@ interface Fila {
                         </button>
                       }
                     }
-                    @if (rol() === 'admin' && e.estado === 'Pendiente' && e.retiro === 'deposito') {
+                    @if (rol() === 'admin' && data.puedeRecepcionar(e)) {
                       <button type="button" class="btn btn-sm btn-primary" (click)="recepcionar(e)" [attr.aria-label]="'Recepcionar ' + e.id" title="Recepcionar en depósito">
                         <i class="bi bi-box-arrow-in-down"></i><span class="d-none d-xl-inline">Recepcionar</span>
                       </button>
@@ -255,7 +255,7 @@ export class EnviosTable {
     const partes: string[] = [];
     if (r.unidades) partes.push(`${r.unidades} u.`);
     if (r.peso !== null) partes.push(`${r.peso.toLocaleString('es-AR', { maximumFractionDigits: 3 })} kg${r.completo ? '' : '+'}`);
-    partes.push(e.retiro === 'domicilio' ? 'Retiro en domicilio' : 'Lo lleva al depósito');
+    partes.push(e.retiro === 'domicilio' ? 'Retiro en domicilio' : e.retiro === 'recoleccion' ? 'Retiro y depósito' : 'Lo lleva al depósito');
     return partes.join(' · ');
   }
 

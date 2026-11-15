@@ -17,9 +17,17 @@ import { AccionesEnvio } from '../../core/services/envio-acciones';
         </div>
       }
       @case ('Retirado') {
-        <div [class]="clase()">
-          <button type="button" class="btn btn-primary" (click)="salir()"><i class="bi bi-truck"></i>Salir a entregar</button>
-        </div>
+        @if (e.retiro === 'recoleccion') {
+          @if (!e.entregadoEnDepositoEn) {
+            <div [class]="clase()">
+              <button type="button" class="btn btn-primary" (click)="aDeposito()"><i class="bi bi-building"></i>Entregué en el depósito</button>
+            </div>
+          }
+        } @else {
+          <div [class]="clase()">
+            <button type="button" class="btn btn-primary" (click)="salir()"><i class="bi bi-truck"></i>Salir a entregar</button>
+          </div>
+        }
       }
       @case ('En devolución') {
         @if (e.mensajeroId && !e.devolucionEntregadaEn) {
@@ -45,6 +53,10 @@ export class AccionesMensajero {
 
   protected retirar() {
     void this.acciones.retirar(this.envio());
+  }
+
+  protected aDeposito() {
+    void this.acciones.entregarEnDeposito(this.envio());
   }
 
   protected salir() {

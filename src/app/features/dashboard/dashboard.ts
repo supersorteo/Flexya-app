@@ -8,6 +8,8 @@ import { CrearEnvio } from '../envios/crear-envio';
 import { EnviosTable } from '../../shared/ui/envios-table';
 import { ParadaCard } from '../../shared/ui/parada-card';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
+import { tarjetaGanancias } from '../pagos/tarjeta-ganancias';
+import { AlertasAdmin, ResumenNegocio } from './resumen-negocio';
 
 interface Kpi {
   label: string;
@@ -15,11 +17,12 @@ interface Kpi {
   foot: string;
   icon: string;
   tone: 'blue' | 'teal' | 'amber' | 'purple';
+  enlace?: string;
 }
 
 @Component({
   selector: 'fx-dashboard',
-  imports: [KpiCard, PageHeader, EnviosTable, ParadaCard, RouterLink, DatePipe],
+  imports: [KpiCard, PageHeader, EnviosTable, ParadaCard, RouterLink, DatePipe, AlertasAdmin, ResumenNegocio],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <fx-page-header [eyebrow]="eyebrow()" [title]="titulo()" [subtitle]="subtitulo()">
@@ -39,9 +42,24 @@ interface Kpi {
       </div>
     }
 
+    @if (user()?.rol === 'admin' && data.clientes().length) {
+      <fx-resumen-negocio />
+      <fx-alertas-admin />
+      <div class="mb-3">
+        <h2 class="h6 mb-0">Operación ahora</h2>
+        <p class="fx-muted small mb-0">Lo que está pasando en este momento, no un período.</p>
+      </div>
+    }
+
     <div class="fx-kpi-grid">
       @for (k of kpis(); track k.label) {
-        <fx-kpi [label]="k.label" [value]="k.value" [foot]="k.foot" [icon]="k.icon" [tone]="k.tone" />
+        @if (k.enlace) {
+          <a class="fx-kpi-link" [routerLink]="k.enlace" [attr.aria-label]="k.label + ': ver el detalle'">
+            <fx-kpi [label]="k.label" [value]="k.value" [foot]="k.foot" [icon]="k.icon" [tone]="k.tone" />
+          </a>
+        } @else {
+          <fx-kpi [label]="k.label" [value]="k.value" [foot]="k.foot" [icon]="k.icon" [tone]="k.tone" />
+        }
       }
     </div>
 
@@ -145,11 +163,8 @@ export class Dashboard {
     const rol = this.user()?.rol;
     if (rol === 'admin') {
       return [
-        { label: 'Por recepcionar', value: e.filter((x) => x.estado === 'Pendiente' && x.retiro === 'deposito').length, foot: 'esperan llegar al depósito', icon: 'inbox', tone: 'amber' },
-        { label: 'Por asignar', value: enDeposito.length + e.filter((x) => x.estado === 'Pendiente' && x.retiro === 'domicilio').length, foot: 'en depósito o directos', icon: 'building', tone: 'purple' },
-        { label: 'Con mensajeros', value: e.filter((x) => enCursoMensajero(x)).length, foot: 'retiro o reparto en curso', icon: 'truck', tone: 'blue' },
+        { label: 'Con mensajeros', value: e.filter((x) => enCursoMensajero(x)).length, foot: 'retiros y entregas en la calle', icon: 'truck', tone: 'blue' },
         { label: 'Unidades en depósito', value: unidadesEnDeposito, foot: 'de paquetes recibidos', icon: 'boxes', tone: 'teal' },
-        { label: 'Casos abiertos', value: e.filter((x) => ['Incidencia', 'En revisión', 'Retiro fallido'].includes(x.estado) || (x.estado === 'En devolución' && !x.mensajeroId)).length, foot: 'requieren una decisión', icon: 'exclamation-diamond', tone: 'amber' },
       ];
     }
     if (rol === 'mensajero') {
@@ -159,8 +174,7 @@ export class Dashboard {
         { label: 'Paradas en curso', value: e.filter((x) => enCursoMensajero(x)).length, foot: 'retiros y entregas de hoy', icon: 'geo-alt', tone: 'blue' },
         { label: 'Entregados', value: count('Entregado'), foot: 'completados', icon: 'check2-circle', tone: 'teal' },
         { label: 'Incidencias', value: count('Incidencia'), foot: 'con seguimiento', icon: 'exclamation-triangle', tone: 'amber' },
-        { label: 'Ganado esta semana', value: pesos(g.semana), foot: `${pesos(g.hoy)} hoy`, icon: 'cash-coin', tone: 'purple' },
-        { label: 'A cobrar', value: pesos(g.pendiente), foot: `${pesos(g.cobrado)} ya cobrado`, icon: 'wallet2', tone: 'teal' },
+        { ...tarjetaGanancias(g, pesos), enlace: '/mensajero/ganancias' },
       ];
     }
     return [

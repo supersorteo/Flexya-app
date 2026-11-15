@@ -13,6 +13,15 @@ const PASOS_DIRECTO: { estado: EstadoEnvio; etiqueta: string; icono: string }[] 
   { estado: 'Entregado', etiqueta: 'Entregado', icono: 'check2-circle' },
 ];
 
+const PASOS_RECOLECCION: { estado: EstadoEnvio; etiqueta: string; icono: string }[] = [
+  { estado: 'Pendiente', etiqueta: 'Creado', icono: 'bag-check' },
+  { estado: 'Retiro asignado', etiqueta: 'Retiro asignado', icono: 'person-check' },
+  { estado: 'Retirado', etiqueta: 'Retirado', icono: 'box-seam' },
+  { estado: 'En depósito', etiqueta: 'En depósito', icono: 'building' },
+  { estado: 'En reparto', etiqueta: 'En reparto', icono: 'truck' },
+  { estado: 'Entregado', etiqueta: 'Entregado', icono: 'check2-circle' },
+];
+
 const PASOS: { estado: EstadoEnvio; etiqueta: string; icono: string }[] = [
   { estado: 'Pendiente', etiqueta: 'Creado', icono: 'bag-check' },
   { estado: 'En depósito', etiqueta: 'En depósito', icono: 'building' },
@@ -86,8 +95,8 @@ const PASOS: { estado: EstadoEnvio; etiqueta: string; icono: string }[] = [
 
         <section class="fx-detalle-bloque">
           <h4 class="fx-detalle-titulo">Retiro</h4>
-          @if (e.retiro === 'domicilio') {
-            <p class="fx-detalle-principal">En tu domicilio</p>
+          @if (e.retiro !== 'deposito') {
+            <p class="fx-detalle-principal">{{ e.retiro === 'recoleccion' ? 'Lo retiramos y pasa por el depósito' : 'En tu domicilio' }}</p>
             @if (data.tamanoRetiro(e) > 1) {
               <p class="fx-parada-linea"><i class="bi bi-people" aria-hidden="true"></i><span>Retiro {{ e.retiroId }} · {{ data.tamanoRetiro(e) }} destinatarios</span></p>
             }
@@ -152,7 +161,7 @@ export class EnvioDetalleModal {
 
   envio!: Envio;
   protected get pasos() {
-    return this.envio.retiro === 'domicilio' ? PASOS_DIRECTO : PASOS;
+    return this.envio.retiro === 'domicilio' ? PASOS_DIRECTO : this.envio.retiro === 'recoleccion' ? PASOS_RECOLECCION : PASOS;
   }
 
   protected readonly maxIntentos = MAX_INTENTOS;
@@ -169,7 +178,7 @@ export class EnvioDetalleModal {
     const directo = this.envio.retiro === 'domicilio';
     const equivalente: Partial<Record<EstadoEnvio, EstadoEnvio>> = {
       Incidencia: 'En reparto',
-      'En revisión': directo ? 'Pendiente' : 'En depósito',
+      'En revisión': directo || (this.envio.retiro === 'recoleccion' && !this.envio.entregadoEnDepositoEn) ? 'Pendiente' : 'En depósito',
       'Retiro fallido': 'Retiro asignado',
     };
     if (directo) equivalente['En depósito'] = 'Retirado';

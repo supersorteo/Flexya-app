@@ -218,7 +218,7 @@ export class DataService {
   }
 
   puedeCancelarAdmin(e: Envio): boolean {
-    return ['Pendiente', 'Retiro asignado', 'Retiro fallido'].includes(e.estado) || (e.estado === 'En revisión' && e.retiro === 'domicilio');
+    return ['Pendiente', 'Retiro asignado', 'Retiro fallido'].includes(e.estado) || (e.estado === 'En revisión' && !enCustodiaFlexya(e));
   }
 
   puedeEliminarAdmin(e: Envio): boolean {
@@ -226,7 +226,7 @@ export class DataService {
   }
 
   puedeDevolver(e: Envio): boolean {
-    return e.estado === 'En depósito' || (e.estado === 'En revisión' && e.retiro === 'deposito');
+    return e.estado === 'En depósito' || (e.estado === 'En revisión' && enCustodiaFlexya(e));
   }
 
   puedeCorregirDestino(e: Envio): boolean {
@@ -303,7 +303,7 @@ export class DataService {
 
   private delMensajero(id: string, mensajeroId: string, estado: EstadoEnvio): Envio | null {
     const e = this.envios().find((x) => x.id === id);
-    return e && e.retiro === 'domicilio' && e.mensajeroId === mensajeroId && e.estado === estado ? e : null;
+    return e && e.retiro !== 'deposito' && e.mensajeroId === mensajeroId && e.estado === estado ? e : null;
   }
 
   retirar(id: string, mensajeroId: string, observaciones = ''): boolean {
@@ -319,12 +319,26 @@ export class DataService {
   }
   salirAEntregar(id: string, mensajeroId: string): boolean {
     const base = this.delMensajero(id, mensajeroId, 'Retirado');
-    if (!base) return false;
+    if (!base || base.retiro === 'recoleccion') return false;
     for (const p of this.paquetesDelRetiro(base, 'Retirado')) {
       this.cambiarEstado(p.id, 'En reparto', 'Hoy', 'blue', `Envío ${p.id} en reparto`, {}, 'En camino al destinatario.');
     }
     return true;
   }
+  entregarEnDeposito(id: string, mensajeroId: string): boolean {
+    const base = this.delMensajero(id, mensajeroId, 'Retirado');
+    if (!base || base.retiro !== 'recoleccion' || base.entregadoEnDepositoEn) return false;
+    const ahora = new Date().toISOString();
+    for (const p of this.paquetesDelRetiro(base, 'Retirado')) {
+      if (p.entregadoEnDepositoEn) continue;
+      this.cambiarEstado(
+        p.id, 'Retirado', 'Esperando recepción en el depósito', 'amber', `Envío ${p.id} entregado en el depósito`,
+        { entregadoEnDepositoEn: ahora }, 'El mensajero entregó el paquete en el depósito: falta la recepción de Flexya.',
+      );
+    }
+    return true;
+  }
+
   retiroFallido(id: string, mensajeroId: string, motivo: string): boolean {
     const base = this.delMensajero(id, mensajeroId, 'Retiro asignado');
     if (!motivo.trim() || !base) return false;
@@ -341,7 +355,7 @@ export class DataService {
   }
 
   puedeObservar(e: Envio): boolean {
-    return (e.estado === 'Pendiente' && e.retiro === 'deposito') || e.estado === 'En depósito';
+    return this.puedeRecepcionar(e) || e.estado === 'En depósito';
   }
 
   observar(id: string, motivo: string): boolean {
@@ -355,7 +369,7 @@ export class DataService {
   reanudar(id: string): boolean {
     const envio = this.envios().find((e) => e.id === id);
     if (envio?.estado !== 'En revisión') return false;
-    if (envio.retiro === 'domicilio') {
+    if (envio.retiro === 'domicilio' || (envio.retiro === 'recoleccion' && !envio.entregadoEnDepositoEn)) {
       this.cambiarEstado(id, 'Pendiente', 'A coordinar', 'teal', `Envío ${id} reanudado`, { nota: '', mensajeroId: null }, 'Se verificó el contenido: falta asignar un mensajero.');
     } else {
       this.cambiarEstado(id, 'En depósito', 'Listo para asignar', 'teal', `Envío ${id} reanudado`, { nota: '' }, 'Se verificó el contenido.');
@@ -390,19 +404,28 @@ export class DataService {
     return true;
   }
 
+  puedeRecepcionar(e: Envio): boolean {
+    return (e.estado === 'Pendiente' && e.retiro === 'deposito') || (e.estado === 'Retirado' && e.retiro === 'recoleccion' && !!e.entregadoEnDepositoEn);
+  }
+
+  paquetesRecepcionables(e: Envio): Envio[] {
+    return this.envios().filter(
+      (x) => x.clienteId === e.clienteId && x.retiroId === e.retiroId && x.estado === e.estado && x.retiro === e.retiro && x.mensajeroId === e.mensajeroId && this.puedeRecepcionar(x),
+    );
+  }
+
   recepcionar(id: string, observaciones = ''): boolean {
     const envio = this.envios().find((e) => e.id === id);
-    if (!envio || envio.estado !== 'Pendiente' || envio.retiro !== 'deposito') return false;
-    for (const p of this.paquetesDelRetiro(envio, 'Pendiente')) {
-      this.cambiarEstado(p.id, 'En depósito', 'Listo para asignar', 'teal', 'Paquete recepcionado', {}, observaciones ? `Observaciones: ${observaciones}` : '');
+    if (!envio || !this.puedeRecepcionar(envio)) return false;
+    for (const p of this.paquetesRecepcionables(envio)) {
+      this.cambiarEstado(p.id, 'En depósito', 'Listo para asignar', 'teal', 'Paquete recepcionado', { mensajeroId: null }, observaciones ? `Observaciones: ${observaciones}` : '');
     }
     return true;
-  }
-  puedeAsignarse(e: Envio): boolean {
+  }  puedeAsignarse(e: Envio): boolean {
     return (
       (e.estado === 'En depósito' && (e.intentos ?? 0) < MAX_INTENTOS) ||
       (e.estado === 'En devolución' && !e.mensajeroId) ||
-      (e.retiro === 'domicilio' && (e.estado === 'Pendiente' || e.estado === 'Retiro fallido'))
+      (e.retiro !== 'deposito' && (e.estado === 'Pendiente' || e.estado === 'Retiro fallido'))
     );
   }
 
@@ -759,6 +782,11 @@ export class DataService {
     return user?.rol === 'mensajero' ? this.comisiones().filter((c) => c.mensajeroId === user.mensajeroId) : [];
   }
 
+  liquidacionesDe(user: Usuario | null): Liquidacion[] {
+    if (user?.rol === 'admin') return this.liquidaciones();
+    return user?.rol === 'mensajero' ? this.liquidaciones().filter((l) => l.mensajeroId === user.mensajeroId && l.estado !== 'Anulada') : [];
+  }
+
   guardarConfigPagos(config: ConfigPagos) {
     this.mutate('Configuración de pagos', (d) => ({ ...d, configPagos: [config] }));
   }
@@ -830,7 +858,9 @@ export class DataService {
   resumenPagos() {
     const ingresos = this.envios().filter((e) => e.estado === 'Entregado').reduce((t, e) => t + e.importe, 0);
     const comisionado = this.comisiones().reduce((t, c) => t + c.monto, 0);
-    const pendiente = this.comisiones().filter((c) => this.estadoComision(c) !== 'Pagada').reduce((t, c) => t + c.monto, 0);
+    const sinLiquidar = this.comisiones().filter((c) => !c.liquidacionId).reduce((t, c) => t + c.monto, 0);
+    const liquidadoSinPagar = this.liquidaciones().filter((l) => l.estado === 'Generada').reduce((t, l) => t + l.neto, 0);
+    const pendiente = sinLiquidar + liquidadoSinPagar;
     const pagado = this.liquidaciones().filter((l) => l.estado === 'Pagada').reduce((t, l) => t + l.neto, 0);
     return {
       ingresos: this.redondear(ingresos),
@@ -850,11 +880,21 @@ export class DataService {
     const semana = hoyISO(lunes);
     const mes = hoy.slice(0, 7);
     const suma = (lista: Comision[]) => this.redondear(lista.reduce((t, c) => t + c.monto, 0));
+    const pagadas = this.liquidaciones()
+      .filter((l) => l.mensajeroId === mensajeroId && l.estado === 'Pagada' && !!l.pagadaEn)
+      .sort((a, b) => b.pagadaEn!.localeCompare(a.pagadaEn!));
+    const acumulado = suma(propias.filter((c) => !c.liquidacionId));
+    const liquidado = this.redondear(
+      this.liquidaciones().filter((l) => l.mensajeroId === mensajeroId && l.estado === 'Generada').reduce((t, l) => t + l.neto, 0),
+    );
     return {
       hoy: suma(propias.filter((c) => fechaLocal(c.fecha) === hoy)),
       semana: suma(propias.filter((c) => fechaLocal(c.fecha) >= semana)),
       mes: suma(propias.filter((c) => fechaLocal(c.fecha).startsWith(mes))),
-      pendiente: suma(propias.filter((c) => this.estadoComision(c) !== 'Pagada')),
+      pendiente: this.redondear(acumulado + liquidado),
+      acumulado,
+      liquidado,
+      ultimoPago: pagadas[0] ? { importe: pagadas[0].neto, fecha: pagadas[0].pagadaEn! } : null,
       cobrado: this.redondear(this.liquidaciones().filter((l) => l.mensajeroId === mensajeroId && l.estado === 'Pagada').reduce((t, l) => t + l.neto, 0)),
     };
   }
@@ -944,22 +984,22 @@ export class DataService {
       direccion: input.direccion,
       localidad: input.localidad,
       zonaId: zona?.id ?? '',
-      importe: zona?.tarifa ?? 2200,
+      importe: (zona?.tarifa ?? 2200) + (retiro === 'recoleccion' ? this.configOperacion().recargoRecoleccion : 0),
       retiro,
       ...this.fechaDeRetiro(input, retiro, previo),
-      origen: retiro === 'domicilio' && cliente ? direccionCompleta(cliente) : '',
+      origen: retiro !== 'deposito' && cliente ? direccionCompleta(cliente) : '',
       items: this.armarItems(input.items ?? [], clienteId),
     };
   }
 
   private fechaDeRetiro(
     input: NuevoEnvio,
-    retiro: 'domicilio' | 'deposito',
+    retiro: 'domicilio' | 'deposito' | 'recoleccion',
     previo?: Envio,
   ): { fechaRetiro: string; retiroProgramado: boolean; franja: Franja | null } {
     const programado = input.programado === true && !!input.fechaRetiro && input.fechaRetiro >= hoyISO();
     if (programado) {
-      return { fechaRetiro: input.fechaRetiro!, retiroProgramado: true, franja: retiro === 'domicilio' ? (input.franja ?? 'manana') : null };
+      return { fechaRetiro: input.fechaRetiro!, retiroProgramado: true, franja: retiro !== 'deposito' ? (input.franja ?? 'manana') : null };
     }
     const conservar = previo && previo.estado !== 'Borrador' && !previo.retiroProgramado && previo.fechaRetiro;
     return { fechaRetiro: conservar ? previo.fechaRetiro! : this.proximaFechaRetiro(), retiroProgramado: false, franja: null };

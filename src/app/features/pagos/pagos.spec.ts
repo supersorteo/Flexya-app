@@ -2,7 +2,7 @@ import { registerLocaleData } from '@angular/common';
 import localeEsAr from '@angular/common/locales/es-AR';
 import { TestBed } from '@angular/core/testing';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { ClienteInput, MensajeroInput } from '../../core/models';
+import { ClienteInput, MensajeroInput, ZONAS } from '../../core/models';
 import { AlertService } from '../../core/services/alert.service';
 import { DataService } from '../../core/services/data.service';
 import { Pagos } from './pagos';
@@ -47,14 +47,38 @@ describe('Pantalla de pagos del superadmin', () => {
   it('muestra los indicadores, lo que hay por liquidar y la configuración de porcentajes', () => {
     const { el } = pantalla();
     expect(el.textContent).toContain('Ingresos por entregas');
-    expect(el.textContent).toContain('Margen de Flexya');
+    expect(el.textContent).toContain('Te queda a vos');
     expect(el.textContent).toContain('Santiago Pereyra');
     expect(el.querySelectorAll('input[type=number]').length).toBeGreaterThan(8);
-    expect(el.textContent).toContain('Por zona (opcional)');
-    expect(el.textContent).toContain('Por mensajero (opcional)');
+    expect(el.textContent).toContain('Pagar distinto en algunas zonas');
+    expect(el.textContent).toContain('Porcentaje de cada mensajero');
+    expect(el.querySelector('details')!.textContent).not.toContain('Santiago Pereyra');
+    expect(el.querySelectorAll('.fx-pasos-pago li')).toHaveLength(3);
   });
 
-  it('guarda los porcentajes con confirmación, solo los overrides cargados', async () => {
+  it('el ejemplo muestra en vivo cuánto gana el mensajero y cuánto se queda Flexya', () => {
+    const { f, el, comp } = pantalla();
+    const ejemplo = () => el.querySelector('.fx-ejemplo')!.textContent!.replace(/\s+/g, ' ');
+    const muestra = ZONAS[0].tarifa;
+    expect(ejemplo()).toContain('El mensajero gana');
+    comp.form.controls['general'].setValue(50);
+    f.detectChanges();
+    expect(ejemplo().replace(/\s/g, '')).toContain('gana$' + (muestra / 2).toLocaleString('es-AR'));
+    expect(el.textContent).toContain('Hoy se paga el 50% por cada envío entregado');
+  });
+
+  it('cada zona muestra lo que ganaría con su porcentaje y, vacía, usa el general', () => {
+    const { f, el, comp } = pantalla();
+    const zona = ZONAS[1];
+    const fila = () => [...el.querySelector('details')!.querySelectorAll('.fx-excepcion')].find((n) => n.textContent!.includes(zona.nombre))!.textContent!.replace(/\s+/g, ' ');
+    expect(fila()).toContain('Gana');
+    (comp.form.controls['zonas'] as unknown as { controls: Record<string, { setValue: (v: unknown) => void }> }).controls[zona.id].setValue('100');
+    f.detectChanges();
+    expect(el.textContent).toContain('1 zona con otro porcentaje');
+    expect(fila().replace(/\s/g, '')).toContain('Gana$' + zona.tarifa.toLocaleString('es-AR') + 'porenvío');
+  });
+
+  it('guarda los porcentajes de una vez, sin confirmación, y solo los que se cargaron', async () => {
     const { f, comp } = pantalla();
     comp.form.controls['general'].setValue(65);
     comp.form.controls['fallido'].setValue(20);
@@ -62,16 +86,13 @@ describe('Pantalla de pagos del superadmin', () => {
     (comp.form.controls['zonas'] as unknown as { controls: Record<string, { setValue: (v: unknown) => void }> }).controls['caba-norte'].setValue('75');
     (comp.form.controls['mensajeros'] as unknown as { controls: Record<string, { setValue: (v: unknown) => void }> }).controls[mensajeroId].setValue('80');
 
-    alerta.confirmar.mockResolvedValueOnce(false);
     await comp.guardar();
-    expect(data.configPagos().porcentajeGeneral).toBe(60);
-
-    await comp.guardar();
+    expect(alerta.confirmar).not.toHaveBeenCalled();
     f.detectChanges();
     expect(data.configPagos()).toMatchObject({
       porcentajeGeneral: 65, porcentajeIntentoFallido: 20, adicionalRetiro: 300, porZona: { 'caba-norte': 75 }, porMensajero: { [mensajeroId]: 80 },
     });
-    expect(alerta.exito).toHaveBeenCalledWith('Comisiones guardadas');
+    expect(alerta.exito).toHaveBeenCalledWith(expect.stringContaining('Comisiones guardadas'));
   });
 
   it('no guarda un porcentaje fuera de 0 a 100', async () => {

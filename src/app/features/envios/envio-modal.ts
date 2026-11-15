@@ -239,7 +239,7 @@ const sinRepetidos = (control: AbstractControl): ValidationErrors | null => {
             }
           </div>
           @if (error('retiro'); as msg) { <div class="invalid-feedback d-block">{{ msg }}</div> }
-          @if (form.controls.retiro.value === 'domicilio') {
+          @if (retiraMensajero()) {
             <div class="fx-addr-preview"><i class="bi bi-house-door" aria-hidden="true"></i><span>El mensajero pasa a buscarlo por: <strong>{{ domicilioCliente() || 'tu domicilio registrado' }}</strong></span></div>
           }
 
@@ -253,7 +253,7 @@ const sinRepetidos = (control: AbstractControl): ValidationErrors | null => {
             <label class="fx-plan fx-tipo" [class.selected]="form.controls.programar.value">
               <input type="radio" formControlName="programar" [value]="true" class="visually-hidden" />
               <span class="fx-tipo-icon"><i class="bi bi-calendar-event" aria-hidden="true"></i></span>
-              <span><strong>Programar otro día</strong><small>Elegí la fecha{{ form.controls.retiro.value === 'domicilio' ? ' y la franja horaria' : '' }}</small></span>
+              <span><strong>Programar otro día</strong><small>Elegí la fecha{{ retiraMensajero() ? ' y la franja horaria' : '' }}</small></span>
             </label>
           </div>
           @if (form.controls.programar.value) {
@@ -267,7 +267,7 @@ const sinRepetidos = (control: AbstractControl): ValidationErrors | null => {
                 @if (error('fechaRetiro'); as msg) { <div class="invalid-feedback d-block">{{ msg }}</div> }
                 @else { <div class="form-text">Solo días hábiles, hasta 30 días desde hoy.</div> }
               </div>
-              @if (form.controls.retiro.value === 'domicilio') {
+              @if (retiraMensajero()) {
                 <div class="col-12 col-md-6">
                   <label class="form-label" for="e-franja">Franja horaria</label>
                   <select id="e-franja" class="form-select" formControlName="franja">
@@ -327,6 +327,7 @@ export class EnvioModal extends WizardModal implements OnInit {
   protected readonly retiros: { id: RetiroEnvio; etiqueta: string; detalle: string; icono: string }[] = [
     { id: 'domicilio', etiqueta: 'Retirar en mi domicilio', detalle: 'El mensajero pasa a buscar el paquete por tu puerta', icono: 'house-door' },
     { id: 'deposito', etiqueta: 'Lo llevo al depósito', detalle: 'Vos dejás el paquete en el depósito de Flexya', icono: 'building' },
+    { id: 'recoleccion', etiqueta: 'Lo retiran y pasa por el depósito', detalle: 'Un mensajero lo retira en tu domicilio y lo lleva al depósito de Flexya', icono: 'boxes' },
   ];
 
   private readonly stockValido = (control: AbstractControl): ValidationErrors | null => {
@@ -398,6 +399,11 @@ export class EnvioModal extends WizardModal implements OnInit {
       fechaRetiro: e.retiroProgramado ? (e.fechaRetiro ?? '') : '',
       franja: e.franja ?? 'manana',
     });
+  }
+
+  protected retiraMensajero(): boolean {
+    const r = this.form.controls.retiro.value;
+    return r === 'domicilio' || r === 'recoleccion';
   }
 
   protected esBorrador(): boolean {
@@ -538,7 +544,7 @@ export class EnvioModal extends WizardModal implements OnInit {
       retiro: v.retiro as RetiroEnvio,
       programado: v.programar,
       fechaRetiro: v.programar ? v.fechaRetiro : null,
-      franja: v.programar && v.retiro === 'domicilio' ? v.franja : null,
+      franja: v.programar && (v.retiro === 'domicilio' || v.retiro === 'recoleccion') ? v.franja : null,
       ...(this.borrador ? { borrador: true } : {}),
       items: v.items.map((i) => ({ productoId: i.productoId, cantidad: Number(i.cantidad) })),
     };

@@ -32,7 +32,7 @@ import { DataService } from '../../core/services/data.service';
                   <td data-label="Cantidad"><strong [class.text-success]="m.cantidad > 0" [class.text-danger]="m.cantidad < 0">{{ m.cantidad > 0 ? '+' : '' }}{{ m.cantidad }}</strong></td>
                   <td data-label="Saldo">{{ m.saldo }}</td>
                   <td data-label="Detalle">
-                    @if (m.envioId) { {{ m.envioId }} · {{ m.retiro === 'domicilio' ? 'retiro en domicilio' : 'vía depósito' }} } @else { <span class="fx-muted">—</span> }
+                    @if (m.envioId) { {{ m.envioId }} · {{ m.retiro === 'domicilio' ? 'retiro en domicilio' : m.retiro === 'recoleccion' ? 'retiro y depósito' : 'vía depósito' }} } @else { <span class="fx-muted">—</span> }
                   </td>
                 </tr>
               }

@@ -1,38 +1,74 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { ETIQUETA_COMISION } from '../../core/models';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { Comision, ETIQUETA_COMISION, EstadoComision, Liquidacion } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
+import { LiquidacionDetalleModal } from './liquidacion-detalle-modal';
+import { detallePendiente } from './tarjeta-ganancias';
+
+const ESTADO_PARA_MENSAJERO: Record<EstadoComision, string> = { Pendiente: 'Acumulado', Liquidada: 'Liquidado', Pagada: 'Cobrado' };
 
 @Component({
   selector: 'fx-ganancias',
   imports: [PageHeader, KpiCard, DatePipe, CurrencyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <fx-page-header title="Mis ganancias" subtitle="Lo que ganaste por tus entregas y lo que ya te pagamos." />
+    <fx-page-header title="Mis ganancias" subtitle="Lo que vas a cobrar y lo que ya te pagaron." />
 
     <div class="fx-kpi-grid">
+      <fx-kpi label="A cobrar" [value]="moneda(g().pendiente)" [foot]="detalle()" icon="hourglass-split" tone="amber" />
+      <fx-kpi label="Ya cobrado" [value]="moneda(g().cobrado)" foot="lo que ya te pagaron" icon="wallet2" tone="teal" />
       <fx-kpi label="Hoy" [value]="moneda(g().hoy)" foot="ganado hoy" icon="sun" tone="blue" />
-      <fx-kpi label="Esta semana" [value]="moneda(g().semana)" foot="desde el lunes" icon="calendar-week" tone="teal" />
-      <fx-kpi label="A cobrar" [value]="moneda(g().pendiente)" foot="todavía no pagado" icon="hourglass-split" tone="amber" />
-      <fx-kpi label="Cobrado" [value]="moneda(g().cobrado)" foot="liquidaciones pagadas" icon="cash-coin" tone="purple" />
+      <fx-kpi label="Esta semana" [value]="moneda(g().semana)" foot="desde el lunes" icon="calendar-week" tone="purple" />
     </div>
 
+    <section class="fx-panel mb-4">
+      <div class="fx-panel-head">
+        <div>
+          <div class="fx-panel-title">Mis pagos</div>
+          <div class="fx-muted small">Cada vez que Flexya te liquida lo acumulado, queda un recibo.</div>
+        </div>
+      </div>
+      @if (pagos().length) {
+        <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Mis pagos">
+          <table class="fx-table fx-table--filas">
+            <thead><tr><th>Pago</th><th>Período</th><th>Importe</th><th>Estado</th><th>Recibo</th></tr></thead>
+            <tbody>
+              @for (l of pagos(); track l.id) {
+                <tr>
+                  <td data-label="Pago"><strong>{{ l.id }}</strong>@if (l.pagadaEn) { <span class="fx-sub">Cobrado el {{ l.pagadaEn | date: 'dd/MM/yy' }}</span> }</td>
+                  <td data-label="Período">{{ l.desde | date: 'dd/MM' }} al {{ l.hasta | date: 'dd/MM/yy' }}</td>
+                  <td data-label="Importe"><strong>{{ l.neto | currency: 'ARS' : 'symbol-narrow' : '1.0-2' }}</strong></td>
+                  <td data-label="Estado"><span [class]="'fx-status ' + (l.estado === 'Pagada' ? 'st-delivered' : 'st-pending')">{{ l.estado === 'Pagada' ? 'Cobrado' : 'Por cobrar' }}</span></td>
+                  <td data-label="Recibo" class="fx-actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="verRecibo(l)" [attr.aria-label]="'Ver el recibo de ' + l.id" title="Ver recibo"><i class="bi bi-receipt"></i><span class="d-none d-xl-inline">Ver recibo</span></button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="text-center fx-muted py-4 px-3">Todavía no tenés pagos. Aparecen cuando Flexya te liquida lo acumulado.</div>
+      }
+    </section>
+
     <section class="fx-panel">
-      <div class="fx-panel-head"><div class="fx-panel-title">Detalle</div><span class="fx-muted small">{{ filas().length }} movimientos</span></div>
+      <div class="fx-panel-head"><div class="fx-panel-title">Lo que ganaste en cada entrega</div><span class="fx-muted small">{{ filas().length }} movimientos</span></div>
       @if (filas().length) {
         <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Detalle de ganancias">
           <table class="fx-table fx-table--filas">
-            <thead><tr><th>Fecha</th><th>Concepto</th><th>Envío</th><th>Monto</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Concepto</th><th>Envío</th><th>Ganaste</th><th>Estado</th></tr></thead>
             <tbody>
               @for (c of filas(); track c.id) {
                 <tr>
                   <td data-label="Fecha">{{ c.fecha | date: 'dd/MM/yy HH:mm' }}</td>
                   <td data-label="Concepto">{{ etiqueta[c.concepto] }}</td>
                   <td data-label="Envío">{{ c.envioId }}</td>
-                  <td data-label="Monto"><strong>{{ c.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-2' }}</strong></td>
-                  <td data-label="Estado"><span [class]="'fx-status ' + (data.estadoComision(c) === 'Pagada' ? 'st-delivered' : 'st-pending')">{{ data.estadoComision(c) }}</span></td>
+                  <td data-label="Ganaste"><strong>{{ c.monto | currency: 'ARS' : 'symbol-narrow' : '1.0-2' }}</strong></td>
+                  <td data-label="Estado"><span [class]="'fx-status ' + (data.estadoComision(c) === 'Pagada' ? 'st-delivered' : 'st-pending')">{{ estado(c) }}</span></td>
                 </tr>
               }
             </tbody>
@@ -47,13 +83,27 @@ import { KpiCard, PageHeader } from '../../shared/ui/ui';
 export class Ganancias {
   protected readonly data = inject(DataService);
   private readonly auth = inject(AuthService);
+  private readonly modals = inject(NgbModal);
   private readonly pesos = new CurrencyPipe('es-AR');
   protected readonly etiqueta = ETIQUETA_COMISION;
 
   protected readonly g = computed(() => this.data.gananciasDe(this.auth.user()?.mensajeroId ?? ''));
   protected readonly filas = computed(() => this.data.comisionesDe(this.auth.user()));
+  protected readonly pagos = computed(() => this.data.liquidacionesDe(this.auth.user()));
+  protected readonly detalle = computed(() => detallePendiente(this.g(), (n) => this.moneda(n)));
 
   protected moneda(n: number): string {
     return this.pesos.transform(n, 'ARS', 'symbol-narrow', '1.0-2') ?? '';
+  }
+
+  protected estado(c: Comision): string {
+    return ESTADO_PARA_MENSAJERO[this.data.estadoComision(c)];
+  }
+
+  protected verRecibo(l: Liquidacion) {
+    const ref = this.modals.open(LiquidacionDetalleModal, { centered: true, scrollable: true, size: 'lg', modalDialogClass: 'fx-modal', backdropClass: 'fx-backdrop' });
+    ref.componentInstance.liquidacion = l;
+    ref.componentInstance.paraMensajero = true;
+    ref.result.then(() => undefined, () => undefined);
   }
 }

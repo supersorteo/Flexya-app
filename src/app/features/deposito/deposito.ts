@@ -42,6 +42,14 @@ import { KpiCard, PageHeader } from '../../shared/ui/ui';
               @for (h of horas; track h) { <option [ngValue]="h">{{ h }}:00</option> }
             </select>
           </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label" for="op-recargo">Recargo "Retiro y depósito"</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input id="op-recargo" type="number" min="0" step="50" class="form-control" [value]="recargo()" (change)="cambiarRecargo($any($event.target).value)" />
+            </div>
+            <div class="form-text">Se suma a la tarifa de cada envío con este servicio.</div>
+          </div>
           <div class="col-12 col-md-6">
             <label class="form-label" for="op-feriado">Agregar feriado</label>
             <div class="input-group">
@@ -82,6 +90,18 @@ export class Deposito {
   protected readonly nuevoFeriado = signal('');
   protected readonly proxima = computed(() => this.data.proximaFechaRetiro());
 
+  protected readonly recargo = computed(() => this.data.configOperacion().recargoRecoleccion);
+
+  protected cambiarRecargo(valor: string) {
+    const monto = Number(valor);
+    if (!Number.isFinite(monto) || monto < 0) {
+      this.alert.advertencia('Ingresá un monto válido (0 o más).');
+      return;
+    }
+    this.data.guardarConfigOperacion({ ...this.data.configOperacion(), recargoRecoleccion: Math.round(monto) });
+    this.alert.exito(`Recargo: $ ${Math.round(monto)}`);
+  }
+
   protected cambiarCorte(hora: number) {
     this.data.guardarConfigOperacion({ ...this.data.configOperacion(), horaCorte: Number(hora) });
     this.alert.exito(`Hora de corte: ${hora}:00`);
@@ -109,6 +129,6 @@ export class Deposito {
   private readonly propios = computed(() => this.data.enviosDe(this.auth.user()));
   protected readonly enDeposito = computed(() => this.propios().filter((e) => e.estado === 'En depósito'));
   protected readonly enRevision = computed(() => this.propios().filter((e) => e.estado === 'En revisión'));
-  protected readonly porRecibir = computed(() => this.propios().filter((e) => e.estado === 'Pendiente' && e.retiro === 'deposito'));
+  protected readonly porRecibir = computed(() => this.propios().filter((e) => this.data.puedeRecepcionar(e)));
   protected readonly unidades = computed(() => this.enDeposito().reduce((total, e) => total + e.items.reduce((n, i) => n + i.cantidad, 0), 0));
 }

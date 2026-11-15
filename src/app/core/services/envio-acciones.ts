@@ -193,7 +193,7 @@ export class AccionesEnvio {
   }
 
   async recepcionar(e: Envio): Promise<boolean> {
-    const paquetes = this.data.paquetesDelRetiro(e, 'Pendiente');
+    const paquetes = this.data.paquetesRecepcionables(e);
     const observaciones = await this.alert.pedirTexto({
       titulo: paquetes.length > 1 ? `¿Recibiste los ${paquetes.length} paquetes del retiro?` : `¿Recibiste el envío ${e.id}?`,
       mensaje: `De ${this.data.nombreCliente(e.clienteId)}: ${this.resumenPaquetes(paquetes)} Verificá que coincida con lo que llegó.`,
@@ -221,7 +221,7 @@ export class AccionesEnvio {
       mensaje: devolucion
         ? `Lleva el paquete de vuelta a ${this.data.domicilioCliente(e.clienteId) || 'el domicilio del cliente'}. Las unidades vuelven al stock cuando el cliente confirme que lo recibió.`
         : directo
-        ? `Primero retira ${this.data.paquetesDelRetiro(e, e.estado).length > 1 ? `los ${this.data.paquetesDelRetiro(e, e.estado).length} paquetes del retiro` : 'el paquete'} en ${e.origen || 'el domicilio del cliente'} y después los entrega, sin pasar por el depósito.`
+        ? `Primero retira ${this.data.paquetesDelRetiro(e, e.estado).length > 1 ? `los ${this.data.paquetesDelRetiro(e, e.estado).length} paquetes del retiro` : 'el paquete'} en ${e.origen || 'el domicilio del cliente'} ${e.retiro === 'recoleccion' ? 'y los lleva al depósito de Flexya' : 'y después los entrega, sin pasar por el depósito'}.`
         : `Entrega a ${e.destinatario} en ${e.localidad}.`,
       confirmar: 'Sí, asignar',
       tipo: 'info',
@@ -259,6 +259,23 @@ export class AccionesEnvio {
     this.alert.exito(paquetes.length > 1 ? `${paquetes.length} paquetes retirados` : `${e.id} retirado`);
     return true;
   }
+  async entregarEnDeposito(e: Envio): Promise<boolean> {
+    const paquetes = this.data.paquetesDelRetiro(e, 'Retirado');
+    const confirmado = await this.alert.confirmar({
+      titulo: paquetes.length > 1 ? `¿Entregaste los ${paquetes.length} paquetes en el depósito?` : `¿Entregaste ${e.id} en el depósito?`,
+      mensaje: 'Quien atiende el depósito tiene que confirmar la recepción y revisar el contenido.',
+      confirmar: 'Sí, los entregué',
+      tipo: 'info',
+    });
+    if (!confirmado) return false;
+    if (!this.data.entregarEnDeposito(e.id, this.mensajeroId)) {
+      this.alert.advertencia('No se pudo registrar la entrega en el depósito.');
+      return false;
+    }
+    this.alert.exito(paquetes.length > 1 ? `${paquetes.length} paquetes entregados en el depósito` : `${e.id} entregado en el depósito`);
+    return true;
+  }
+
   salirAEntregar(e: Envio): boolean {
     if (!this.data.salirAEntregar(e.id, this.mensajeroId)) {
       this.alert.advertencia('Este envío no se puede poner en reparto.');

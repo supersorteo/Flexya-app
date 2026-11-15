@@ -39,8 +39,8 @@ describe('Fecha de retiro automática', () => {
     });
 
     it('la hora de corte es configurable', () => {
-      expect(proximaFechaHabil(new Date(2030, 0, 15, 11, 0), { horaCorte: 10, feriados: [] })).toBe('2030-01-16');
-      expect(proximaFechaHabil(new Date(2030, 0, 15, 11, 0), { horaCorte: 18, feriados: [] })).toBe('2030-01-15');
+      expect(proximaFechaHabil(new Date(2030, 0, 15, 11, 0), { horaCorte: 10, feriados: [], recargoRecoleccion: 0 })).toBe('2030-01-16');
+      expect(proximaFechaHabil(new Date(2030, 0, 15, 11, 0), { horaCorte: 18, feriados: [], recargoRecoleccion: 0 })).toBe('2030-01-15');
     });
   });
 
@@ -81,7 +81,7 @@ describe('Fecha de retiro automática', () => {
 
     it('al editar un envío automático no se mueve la fecha; pasarlo a programado sí', () => {
       const e = data.crearEnvio({ ...destino, retiro: 'domicilio' }, clienteId);
-      data.guardarConfigOperacion({ horaCorte: 0, feriados: [] });
+      data.guardarConfigOperacion({ horaCorte: 0, feriados: [], recargoRecoleccion: 0 });
       data.actualizarEnvio(e.id, clienteId, { ...destino, retiro: 'domicilio', direccion: 'Honduras 4800' });
       expect(data.envios()[0].fechaRetiro).toBe(e.fechaRetiro);
 
@@ -91,7 +91,7 @@ describe('Fecha de retiro automática', () => {
 
     it('un borrador recalcula la fecha automática recién cuando se solicita', () => {
       const e = data.crearEnvio({ ...destino, retiro: 'domicilio', borrador: true }, clienteId);
-      data.guardarConfigOperacion({ horaCorte: 0, feriados: [] });
+      data.guardarConfigOperacion({ horaCorte: 0, feriados: [], recargoRecoleccion: 0 });
       expect(data.solicitarEnvio(e.id, clienteId)).toBe(true);
       expect(data.envios()[0].fechaRetiro).toBe(data.proximaFechaRetiro());
     });

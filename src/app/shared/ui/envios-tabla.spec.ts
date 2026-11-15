@@ -454,6 +454,25 @@ describe('Tabla de envíos', () => {
       expect(data.envios()[0]).toMatchObject({ id: e.id, estado: 'Entregado', mensajeroId: null });
     });
 
+    it('un retiro que pasa por el depósito se recepciona recién cuando el mensajero declaró la entrega', async () => {
+      const c = data.agregarCliente(cliente).cliente;
+      const { mensajero: m } = data.agregarMensajero(mensajero);
+      const e = data.crearEnvio({ ...entrega, retiro: 'recoleccion' }, c.id);
+      data.asignar(e.id, m.id);
+      data.retirar(e.id, m.id);
+      expect(tabla().titulos()).not.toContain('Recepcionar en depósito');
+
+      data.entregarEnDeposito(e.id, m.id);
+      const { f, botones } = tabla();
+      expect(botones(0).map((b) => b.title)).toContain('Recepcionar en depósito');
+      alerta.pedirTexto.mockResolvedValueOnce('Sin novedades');
+      botones(0).find((b) => b.title === 'Recepcionar en depósito')!.click();
+      await esperar();
+      f.detectChanges();
+      expect(data.envios()[0]).toMatchObject({ estado: 'En depósito', mensajeroId: null });
+      expect(tabla().titulos()).toContain('Asignar al mensajero');
+    });
+
     it('no se asigna un envío vía depósito que todavía no llegó, ni a un mensajero inexistente', () => {
       const c = data.agregarCliente(cliente).cliente;
       const e = data.crearEnvio(entrega, c.id);

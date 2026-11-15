@@ -61,12 +61,22 @@ export const MOTIVOS_INCIDENCIA = [
   { id: 'otro', etiqueta: 'Otro motivo' },
 ] as const;
 
-export function enCursoMensajero(e: { estado: EstadoEnvio; mensajeroId: string | null; devolucionEntregadaEn?: string }): boolean {
+export function enCursoMensajero(e: {
+  estado: EstadoEnvio;
+  mensajeroId: string | null;
+  devolucionEntregadaEn?: string;
+  retiro?: RetiroEnvio;
+  entregadoEnDepositoEn?: string;
+}): boolean {
+  if (e.estado === 'Retirado' && e.retiro === 'recoleccion' && e.entregadoEnDepositoEn) return false;
   return ESTADOS_MENSAJERO_ACTIVO.includes(e.estado) || (e.estado === 'En devolución' && !!e.mensajeroId && !e.devolucionEntregadaEn);
 }
 
-export function enCustodiaFlexya(e: { estado: EstadoEnvio; retiro: RetiroEnvio }): boolean {
-  return ['En depósito', 'Retirado', 'En reparto', 'Incidencia', 'En devolución'].includes(e.estado) || (e.estado === 'En revisión' && e.retiro === 'deposito');
+export function enCustodiaFlexya(e: { estado: EstadoEnvio; retiro: RetiroEnvio; entregadoEnDepositoEn?: string }): boolean {
+  return (
+    ['En depósito', 'Retirado', 'En reparto', 'Incidencia', 'En devolución'].includes(e.estado) ||
+    (e.estado === 'En revisión' && (e.retiro === 'deposito' || (e.retiro === 'recoleccion' && !!e.entregadoEnDepositoEn)))
+  );
 }
 
 export interface CorreoSimulado {
@@ -173,6 +183,7 @@ export interface Envio {
   intentos: number;
   motivoIncidencia?: string;
   devolucionEntregadaEn?: string;
+  entregadoEnDepositoEn?: string;
 }
 
 export interface HitoEnvio {
@@ -289,7 +300,11 @@ export function volumenProducto(p: { alto: number | null; ancho: number | null; 
   return Math.round(alto * ancho * largo * 10) / 10;
 }
 
-export type RetiroEnvio = 'domicilio' | 'deposito';
+export type RetiroEnvio = 'domicilio' | 'deposito' | 'recoleccion';
+
+export function retiraElMensajero(retiro: RetiroEnvio): boolean {
+  return retiro !== 'deposito';
+}
 
 export interface ItemEnvio {
   productoId: string;
@@ -418,9 +433,10 @@ export const ETIQUETA_FRANJA: Record<Franja, string> = {
 export interface ConfigOperacion {
   horaCorte: number;
   feriados: string[];
+  recargoRecoleccion: number;
 }
 
-export const OPERACION_DEFECTO: ConfigOperacion = { horaCorte: 14, feriados: [] };
+export const OPERACION_DEFECTO: ConfigOperacion = { horaCorte: 14, feriados: [], recargoRecoleccion: 0 };
 
 export function fechaDesdeISO(iso: string): Date {
   const [anio, mes, dia] = iso.split('-').map(Number);

@@ -68,7 +68,7 @@ import { StatusPill } from '../../shared/ui/ui';
           <h2 class="fx-detalle-titulo">Envío</h2>
           <dl class="fx-datos">
             <div><dt>Remitente</dt><dd>{{ data.nombreCliente(e.clienteId) }}</dd></div>
-            @if (e.retiro === 'domicilio') {
+            @if (e.retiro !== 'deposito') {
               <div><dt>Retirar en</dt><dd>{{ e.origen || 'Domicilio del cliente' }}</dd></div>
               @if (e.fechaRetiro) {
                 <div><dt>Retiro</dt><dd>{{ e.fechaRetiro | date: 'EEE d MMM y' }}{{ e.franja ? ' · ' + (e.franja === 'manana' ? 'mañana' : 'tarde') : '' }}</dd></div>

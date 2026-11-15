@@ -182,6 +182,34 @@ describe('RetiroModal: un retiro con varios destinatarios', () => {
     expect(cerrar).toHaveBeenLastCalledWith(expect.objectContaining({ borrador: true }));
   });
 
+  it('ofrece los tres tipos de retiro, incluido el que pasa por el depósito', () => {
+    const { el } = abrir();
+    const opciones = [...el.querySelectorAll('.fx-tipo strong')].map((n) => n.textContent!.trim());
+    expect(opciones).toEqual(expect.arrayContaining(['Retirar en mi domicilio', 'Los llevo al depósito', 'Los retiran y pasan por el depósito']));
+  });
+
+  it('en el retiro que pasa por el depósito se puede programar con franja, y el resumen lo nombra', async () => {
+    const { fixture, modal, el } = abrir();
+    const cerrar = TestBed.inject(NgbActiveModal).close as Mock;
+    modal.form.patchValue({ retiro: 'recoleccion', programar: true });
+    modal.paso.set(0);
+    fixture.detectChanges();
+    expect(el.querySelector('#r-franja')).not.toBeNull();
+    expect(el.textContent).toContain('El mensajero pasa a buscarlos por');
+
+    modal.destinos.at(0).patchValue(datos('Ana'));
+    poner(modal, 0, taza, '1');
+    let dia = sumarDiasISO(7);
+    const d = new Date(dia + 'T00:00:00');
+    while (!data.esDiaHabil(dia)) {
+      d.setDate(d.getDate() + 1);
+      dia = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    modal.form.patchValue({ fechaRetiro: dia, franja: 'manana' });
+    await modal.guardar();
+    expect(cerrar).toHaveBeenCalledWith(expect.objectContaining({ retiro: 'recoleccion', programado: true, fechaRetiro: dia, franja: 'manana' }));
+  });
+
   it('programar guarda la fecha y, en domicilio, la franja', async () => {
     const { modal } = abrir();
     const cerrar = TestBed.inject(NgbActiveModal).close as Mock;
