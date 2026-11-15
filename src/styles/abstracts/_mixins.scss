@@ -13,3 +13,24 @@
   @else if $tono == danger { background: var(--fx-danger-soft); color: var(--fx-danger-text); border: 1px solid var(--fx-danger-border); border-left: 4px solid var(--fx-danger); }
   @else { background: var(--fx-primary-soft); color: var(--fx-text); border: 1px solid var(--fx-primary-border); border-left: 4px solid var(--fx-primary); }
 }
+
+/* Tarjeta fuerte: borde grueso en degradado y sombra profunda (las tarjetas de envíos, clientes, mensajeros, etc. en teléfono) */
+@mixin tarjeta-fuerte {
+  @include tarjeta;
+  border-width: 3px;
+  background: linear-gradient(var(--fx-surface), var(--fx-surface)) padding-box, var(--fx-card-grad-fuerte) border-box;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--fx-brand) 30%, transparent),
+    0 6px 14px color-mix(in srgb, var(--fx-brand) 22%, transparent),
+    0 18px 32px -10px color-mix(in srgb, var(--fx-brand) 38%, transparent);
+}
+
+/* Botones al pie de una tarjeta: la acción principal a todo el ancho, las demás de a dos con su nombre visible */
+@mixin acciones-tarjeta {
+  display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 2px solid var(--fx-border);
+  .btn { flex: 1 1 calc(50% - 8px); min-height: 46px; justify-content: center; font-size: var(--fx-fs-sm); margin: 0; }
+  .btn span.d-none { display: inline !important; }
+  .btn-primary, .btn-success { flex-basis: 100%; order: -1; min-height: 52px; font-size: var(--fx-fs-md); }
+  .form-select { order: -2; flex: 1 1 100%; display: block; width: 100%; max-width: none; min-height: 46px; margin: 0; }
+  small { flex-basis: 100%; }
+}

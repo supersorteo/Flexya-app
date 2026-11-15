@@ -98,6 +98,7 @@
   /* Sombras: solo tres niveles; los paneles estáticos van con borde */
   --fx-shadow: 0 1px 2px rgba(20, 40, 75, 0.1), 0 10px 24px rgba(20, 40, 75, 0.1);
   --fx-card-grad: linear-gradient(135deg, #3b6fe0 0%, #9db2d4 48%, #1f3a63 100%);
+  --fx-card-grad-fuerte: linear-gradient(135deg, #2563eb 0%, #6d8fd6 45%, #0f2a52 100%);
   --fx-th-bg: #d9e3f2;
   --fx-field-bg: #ffffff;
   --fx-primary-ink: #1d4ed8;
@@ -188,6 +189,7 @@
 
   --fx-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 24px rgba(0, 0, 0, 0.4);
   --fx-card-grad: linear-gradient(135deg, #4f86f0 0%, #2e4468 50%, #f59e5b 100%);
+  --fx-card-grad-fuerte: linear-gradient(135deg, #5b94ff 0%, #3f649c 48%, #f59e5b 100%);
   --fx-th-bg: #1b3050;
   --fx-field-bg: #0c192e;
   --fx-primary-ink: #93b8ff;

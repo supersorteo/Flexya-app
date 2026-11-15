@@ -1,6 +1,6 @@
 import { etiquetaArrastre } from '../../core/periodos';
-import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Envio, resumenItems } from '../../core/models';
 import { AlertService } from '../../core/services/alert.service';
@@ -11,7 +11,7 @@ import { EnvioDetalleModal } from '../../features/envios/envio-detalle-modal';
 import { CorregirDestinoModal } from '../../features/envios/corregir-destino-modal';
 import { CrearEnvio } from '../../features/envios/crear-envio';
 import { Empty } from './empty';
-import { StatusPill } from './ui';
+import { slugEstado, StatusPill } from './ui';
 
 interface Fila {
   clave: string;
@@ -21,70 +21,16 @@ interface Fila {
 
 @Component({
   selector: 'fx-envios-table',
-  imports: [StatusPill, DatePipe, Empty],
+  imports: [StatusPill, DatePipe, Empty, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (envios().length) {
-      <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Tabla de envíos">
-        <table class="fx-table fx-table--filas">
-          <thead>
-            <tr>
-              <th>Envío</th>
-              <th>Estado</th>
-              @if (rol() !== 'cliente') {
-                <th>Cliente</th>
-              }
-              <th>Destinatario</th>
-              <th>Destino</th>
-              <th>Fechas</th>
-              @if (rol() === 'admin') {
-                <th>Mensajero</th>
-              }
-              @if (acciones()) {
-                <th>Acciones</th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (f of filas(); track f.clave) {
-              @if (f.grupo; as g) {
-                <tr class="fx-grupo-fila">
-                  <td [attr.colspan]="columnas()">
-                    <div class="fx-grupo">
-                      <button type="button" class="fx-grupo-titulo" (click)="alternarGrupo(g.retiroId)" [attr.aria-expanded]="!cerrados().has(g.retiroId)" [attr.aria-label]="'Retiro ' + g.retiroId">
-                        <i [class]="'bi ' + (cerrados().has(g.retiroId) ? 'bi-chevron-right' : 'bi-chevron-down')" aria-hidden="true"></i>
-                        <strong>Retiro {{ g.retiroId }}</strong>
-                        <span>{{ g.envios.length }} destinatarios</span>
-                        <span class="fx-muted">· {{ progreso(g.envios) }}</span>
-                      </button>
-                      @if (rol() === 'cliente' && cancelables(g.envios) > 0) {
-                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancelarRetiro(g.retiroId, g.envios)" [attr.aria-label]="'Cancelar el retiro ' + g.retiroId" title="Cancelar el retiro completo">
-                          <i class="bi bi-x-circle"></i><span class="d-none d-xl-inline">Cancelar retiro</span>
-                        </button>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              } @else {
-              @let e = f.envio!;
-              <tr>
-                <td data-label="Envío"><strong>{{ e.id }}</strong><span class="fx-sub">{{ detalle(e) }}</span>@if (arrastre(e); as a) {<span class="fx-arrastre"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ a }}</span>}</td>
-                <td data-label="Estado"><fx-status [estado]="e.estado" /></td>
-                @if (rol() !== 'cliente') {
-                  <td data-label="Cliente">{{ data.nombreCliente(e.clienteId) }}</td>
-                }
-                <td data-label="Destinatario">{{ e.destinatario }}</td>
-                <td data-label="Destino">{{ e.direccion }} · {{ e.localidad }} <span class="fx-zone">{{ data.nombreZona(e.zonaId) }}</span></td>
-                <td data-label="Fechas">
+    <ng-template #fechasTpl let-e>
                   <span>Creado {{ e.creadoEn | date: 'dd/MM/yy' }}</span>
                   @if (e.fechaRetiro) { <span class="fx-sub">{{ e.retiro === 'deposito' ? 'Llega' : 'Retiro' }} {{ e.fechaRetiro | date: 'dd/MM/yy' }}{{ e.retiroProgramado ? ' · programado' : '' }}{{ e.franja ? ' · ' + (e.franja === 'manana' ? 'mañana' : 'tarde') : '' }}</span> }
                   @if (e.entregadoEn) { <span class="fx-sub">Entregado {{ e.entregadoEn | date: 'dd/MM/yy HH:mm' }}</span> }
-                </td>
-                @if (rol() === 'admin') {
-                  <td data-label="Mensajero">{{ data.nombreMensajero(e.mensajeroId) }}</td>
-                }
-                @if (acciones()) {
-                  <td data-label="Acciones" class="fx-actions">
+    </ng-template>
+
+    <ng-template #accionesTpl let-e>
                     @if (rol() !== 'mensajero') {
                       <button type="button" class="btn btn-sm btn-outline-secondary" (click)="ver(e)" [attr.aria-label]="'Ver detalle de ' + e.id" title="Ver detalle">
                         <i class="bi bi-eye"></i><span class="d-none d-xl-inline">Detalle</span>
@@ -179,14 +125,126 @@ interface Fila {
                         <i class="bi bi-exclamation-triangle"></i><span class="d-none d-xl-inline">Incidencia</span>
                       </button>
                     }
-                  </td>
+    </ng-template>
+
+    @if (envios().length) {
+      @if (esMovil()) {
+        <div class="fx-cards" role="list" aria-label="Envíos">
+          @for (f of filas(); track f.clave) {
+            @if (f.grupo; as g) {
+              <div class="fx-card-grupo" role="listitem">
+                <button type="button" class="fx-grupo-titulo" (click)="alternarGrupo(g.retiroId)" [attr.aria-expanded]="!cerrados().has(g.retiroId)" [attr.aria-label]="'Retiro ' + g.retiroId">
+                  <i [class]="'bi ' + (cerrados().has(g.retiroId) ? 'bi-chevron-right' : 'bi-chevron-down')" aria-hidden="true"></i>
+                  <strong>Retiro {{ g.retiroId }}</strong>
+                  <span>{{ g.envios.length }} destinatarios</span>
+                </button>
+                <span class="fx-muted fx-card-grupo-progreso">{{ progreso(g.envios) }}</span>
+                @if (rol() === 'cliente' && cancelables(g.envios) > 0) {
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancelarRetiro(g.retiroId, g.envios)" [attr.aria-label]="'Cancelar el retiro ' + g.retiroId" title="Cancelar el retiro completo">
+                    <i class="bi bi-x-circle"></i>Cancelar retiro
+                  </button>
+                }
+              </div>
+            } @else {
+              @let e = f.envio!;
+              <article role="listitem" [class]="'fx-envio-card riel-' + slug(e)">
+                <header class="fx-card-cab">
+                  <strong class="fx-card-id">{{ e.id }}</strong>
+                  <fx-status [estado]="e.estado" />
+                </header>
+                @if (arrastre(e); as a) {
+                  <span class="fx-arrastre"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ a }}</span>
+                }
+                <h3 class="fx-card-nombre">{{ e.destinatario }}</h3>
+                @if (rol() !== 'cliente') {
+                  <p class="fx-card-linea"><i class="bi bi-shop" aria-hidden="true"></i><span>{{ data.nombreCliente(e.clienteId) }}</span></p>
+                }
+                <p class="fx-card-linea"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span>{{ e.direccion }} · {{ e.localidad }} <span class="fx-zone">{{ data.nombreZona(e.zonaId) }}</span></span></p>
+                <p class="fx-card-linea fx-card-linea--suave"><i class="bi bi-box-seam" aria-hidden="true"></i><span>{{ detalle(e) }}</span></p>
+                @if (rol() === 'admin') {
+                  <p class="fx-card-linea fx-card-linea--suave"><i class="bi bi-truck" aria-hidden="true"></i><span>{{ e.mensajeroId ? data.nombreMensajero(e.mensajeroId) : 'Sin mensajero asignado' }}</span></p>
+                }
+                <div class="fx-card-fechas">
+                  <ng-container [ngTemplateOutlet]="fechasTpl" [ngTemplateOutletContext]="{ $implicit: e }" />
+                </div>
+                @if (acciones()) {
+                  <div class="fx-card-acciones">
+                    <ng-container [ngTemplateOutlet]="accionesTpl" [ngTemplateOutletContext]="{ $implicit: e }" />
+                  </div>
+                }
+              </article>
+            }
+          }
+        </div>
+      } @else {
+        <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Tabla de envíos">
+          <table class="fx-table fx-table--filas">
+            <thead>
+              <tr>
+                <th>Envío</th>
+                <th>Estado</th>
+                @if (rol() !== 'cliente') {
+                  <th>Cliente</th>
+                }
+                <th>Destinatario</th>
+                <th>Destino</th>
+                <th>Fechas</th>
+                @if (rol() === 'admin') {
+                  <th>Mensajero</th>
+                }
+                @if (acciones()) {
+                  <th>Acciones</th>
                 }
               </tr>
+            </thead>
+            <tbody>
+              @for (f of filas(); track f.clave) {
+                @if (f.grupo; as g) {
+                  <tr class="fx-grupo-fila">
+                    <td [attr.colspan]="columnas()">
+                      <div class="fx-grupo">
+                        <button type="button" class="fx-grupo-titulo" (click)="alternarGrupo(g.retiroId)" [attr.aria-expanded]="!cerrados().has(g.retiroId)" [attr.aria-label]="'Retiro ' + g.retiroId">
+                          <i [class]="'bi ' + (cerrados().has(g.retiroId) ? 'bi-chevron-right' : 'bi-chevron-down')" aria-hidden="true"></i>
+                          <strong>Retiro {{ g.retiroId }}</strong>
+                          <span>{{ g.envios.length }} destinatarios</span>
+                          <span class="fx-muted">· {{ progreso(g.envios) }}</span>
+                        </button>
+                        @if (rol() === 'cliente' && cancelables(g.envios) > 0) {
+                          <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancelarRetiro(g.retiroId, g.envios)" [attr.aria-label]="'Cancelar el retiro ' + g.retiroId" title="Cancelar el retiro completo">
+                            <i class="bi bi-x-circle"></i><span class="d-none d-xl-inline">Cancelar retiro</span>
+                          </button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                } @else {
+                @let e = f.envio!;
+                <tr>
+                  <td data-label="Envío"><strong>{{ e.id }}</strong><span class="fx-sub">{{ detalle(e) }}</span>@if (arrastre(e); as a) {<span class="fx-arrastre"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ a }}</span>}</td>
+                  <td data-label="Estado"><fx-status [estado]="e.estado" /></td>
+                  @if (rol() !== 'cliente') {
+                    <td data-label="Cliente">{{ data.nombreCliente(e.clienteId) }}</td>
+                  }
+                  <td data-label="Destinatario">{{ e.destinatario }}</td>
+                  <td data-label="Destino">{{ e.direccion }} · {{ e.localidad }} <span class="fx-zone">{{ data.nombreZona(e.zonaId) }}</span></td>
+                  <td data-label="Fechas">
+                    <ng-container [ngTemplateOutlet]="fechasTpl" [ngTemplateOutletContext]="{ $implicit: e }" />
+                  </td>
+                  @if (rol() === 'admin') {
+                    <td data-label="Mensajero">{{ data.nombreMensajero(e.mensajeroId) }}</td>
+                  }
+                  @if (acciones()) {
+                    <td data-label="Acciones" class="fx-actions">
+                      <ng-container [ngTemplateOutlet]="accionesTpl" [ngTemplateOutletContext]="{ $implicit: e }" />
+                    </td>
+                  }
+                </tr>
+                }
               }
-            }
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      }
     } @else {
       <fx-empty icono="inbox" titulo="No hay envíos para mostrar" descripcion="Cuando haya movimientos, los vas a ver acá." />
     }
@@ -203,6 +261,22 @@ export class EnviosTable {
   readonly envios = input.required<Envio[]>();
   readonly acciones = input(false);
   protected readonly rol = () => this.auth.user()?.rol;
+
+  /** En teléfono cada envío es una tarjeta; en pantallas más grandes sigue la tabla. */
+  protected readonly esMovil = signal(false);
+
+  constructor() {
+    const consulta = typeof globalThis.matchMedia === 'function' ? globalThis.matchMedia('(max-width: 767px)') : null;
+    if (!consulta) return;
+    this.esMovil.set(consulta.matches);
+    const alCambiar = (e: { matches: boolean }) => this.esMovil.set(e.matches);
+    consulta.addEventListener?.('change', alCambiar);
+    inject(DestroyRef).onDestroy(() => consulta.removeEventListener?.('change', alCambiar));
+  }
+
+  protected slug(e: Envio): string {
+    return slugEstado(e.estado);
+  }
 
   protected readonly cerrados = signal<ReadonlySet<string>>(new Set());
 

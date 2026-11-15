@@ -507,4 +507,49 @@ describe('Tabla de envíos', () => {
       expect(tabla().titulos()).not.toContain('Reprogramar retiro');
     });
   });
+
+  describe('tarjetas en teléfono', () => {
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: () => undefined, removeEventListener: () => undefined }));
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('en pantalla chica cada envío es una tarjeta y no hay tabla', async () => {
+      const c = await clienteConSesion();
+      const e = data.crearEnvio(entrega, c.id);
+      const { el } = tabla();
+      expect(el.querySelector('table')).toBeNull();
+      const tarjetas = el.querySelectorAll('.fx-envio-card');
+      expect(tarjetas).toHaveLength(1);
+      expect(tarjetas[0].textContent).toContain(e.id);
+      expect(tarjetas[0].textContent).toContain('Ana Gómez');
+      expect(tarjetas[0].querySelector('fx-status')).not.toBeNull();
+    });
+
+    it('las tarjetas traen las mismas acciones que la tabla, con su nombre visible', async () => {
+      const c = await clienteConSesion();
+      data.crearEnvio(entrega, c.id);
+      const { el } = tabla();
+      const botones = [...el.querySelectorAll<HTMLButtonElement>('.fx-card-acciones button')];
+      expect(botones.map((b) => b.title)).toEqual(['Ver detalle', 'Editar envío', 'Cancelar envío']);
+    });
+
+    it('un retiro con varios destinatarios muestra su encabezado y una tarjeta por envío', async () => {
+      const c = await clienteConSesion();
+      data.crearRetiro({ retiro: 'domicilio', destinos: [{ ...entrega, items: [] }, { ...entrega, destinatario: 'Bruno Díaz', items: [] }] }, c.id);
+      const { el } = tabla();
+      expect(el.querySelector('.fx-card-grupo')!.textContent).toContain('2 destinatarios');
+      expect(el.querySelectorAll('.fx-envio-card')).toHaveLength(2);
+    });
+
+    it('al tocar una acción en la tarjeta hace lo mismo que en la tabla', async () => {
+      const c = await clienteConSesion();
+      const e = data.crearEnvio(entrega, c.id);
+      const { el } = tabla();
+      el.querySelector<HTMLButtonElement>('.fx-card-acciones button[title="Cancelar envío"]')!.click();
+      await esperar();
+      expect(alerta.confirmar).toHaveBeenCalled();
+      expect(data.envios().find((x) => x.id === e.id)!.estado).toBe('Cancelado');
+    });
+  });
 });
