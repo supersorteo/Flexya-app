@@ -33,14 +33,6 @@ export interface OpcionesInvitacion {
   accion: string;
 }
 
-const COLORES: Record<SweetAlertIcon, string> = {
-  success: '#20b898',
-  error: '#e86c7b',
-  warning: '#f3a63b',
-  info: '#356ae6',
-  question: '#8c6be8',
-};
-
 const CLASES: SweetAlertCustomClass = {
   popup: 'fx-swal',
   title: 'fx-swal-title',
@@ -88,18 +80,16 @@ export class AlertService {
     const Swal = await cargarSwal();
     const tipo = o.tipo ?? 'advertencia';
     const icono: SweetAlertIcon = tipo === 'info' ? 'question' : 'warning';
-    const color = tipo === 'peligro' ? COLORES.error : tipo === 'info' ? COLORES.info : COLORES.warning;
     const resultado = await Swal.fire({
       ...BASE,
       icon: icono,
-      iconColor: color,
       title: o.titulo,
       text: o.mensaje,
       showCancelButton: true,
       confirmButtonText: o.confirmar ?? 'Confirmar',
       cancelButtonText: o.cancelar ?? 'Cancelar',
       focusCancel: tipo === 'peligro',
-      customClass: { ...CLASES, confirmButton: tipo === 'peligro' ? 'btn btn-danger' : 'btn btn-primary' },
+      customClass: { ...CLASES, popup: `fx-swal fx-swal--${tipo}`, confirmButton: tipo === 'peligro' ? 'btn btn-danger' : 'btn btn-primary' },
     });
     return resultado.isConfirmed;
   }
@@ -109,7 +99,6 @@ export class AlertService {
     const resultado = await Swal.fire({
       ...BASE,
       icon: o.icono ?? 'warning',
-      iconColor: COLORES[o.icono ?? 'warning'],
       title: o.titulo,
       text: o.mensaje,
       input: o.multilinea === false ? 'text' : 'textarea',
@@ -130,7 +119,6 @@ export class AlertService {
     const resultado = await Swal.fire({
       ...BASE,
       icon: 'warning',
-      iconColor: COLORES.warning,
       title: titulo,
       html:
         '<div class="text-start"><label class="form-label" for="fx-inc-motivo">Motivo</label>' +
@@ -159,7 +147,6 @@ export class AlertService {
     await Swal.fire({
       ...BASE,
       icon: 'success',
-      iconColor: COLORES.success,
       title: o.titulo,
       html:
         `<p class="fx-muted small mb-3"><strong>${escapar(o.nombre)}</strong><br>Enviamos un correo a <strong>${escapar(o.email)}</strong> con el enlace para ${escapar(o.accion)}. Vence en ${escapar(o.vigencia)}.</p>` +
@@ -189,7 +176,6 @@ export class AlertService {
       toast: true,
       position: 'top-end',
       icon: icono,
-      iconColor: COLORES[icono],
       title: mensaje,
       showConfirmButton: false,
       timer: duracion,

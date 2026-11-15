@@ -8,7 +8,10 @@ import { AuthService } from '../core/services/auth.service';
 import { DataService } from '../core/services/data.service';
 import { AlertService } from '../core/services/alert.service';
 import { ETIQUETA_TEMA, ICONO_TEMA, ThemeService } from '../core/services/theme.service';
+import { PeriodoService } from '../core/services/periodo.service';
 import { Logo } from '../shared/ui/logo';
+import { PeriodoTabs } from '../shared/ui/periodo-tabs';
+import { etiquetaRango } from '../core/periodos';
 
 interface NavItem {
   path: string;
@@ -49,7 +52,7 @@ const ROL_LABEL: Record<Rol, string> = {
 
 @Component({
   selector: 'fx-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Logo],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Logo, PeriodoTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="fx-shell">
@@ -99,6 +102,18 @@ const ROL_LABEL: Record<Rol, string> = {
             </button>
           </div>
         </header>
+        @if (conPeriodo()) {
+          <div class="fx-periodobar">
+            <fx-periodo [(periodo)]="per.rango" />
+            @if (!per.esActual()) {
+              <div class="fx-viendo" role="status">
+                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                <span>Estás viendo <strong>{{ etiquetaPeriodo() }}</strong>, no el día de hoy.</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="per.reiniciar(per.rango().nivel)">Volver a hoy</button>
+              </div>
+            }
+          </div>
+        }
         <main class="fx-page"><router-outlet /></main>
       </div>
 
@@ -155,6 +170,7 @@ export class Shell {
   private readonly router = inject(Router);
   private readonly alert = inject(AlertService);
   private readonly doc = inject(DOCUMENT);
+  protected readonly per = inject(PeriodoService);
   protected readonly tema = inject(ThemeService);
   protected readonly etiquetaTema = computed(() => ETIQUETA_TEMA[this.tema.preferencia()]);
   protected readonly iconoTema = computed(() => ICONO_TEMA[this.tema.preferencia()]);
@@ -171,6 +187,8 @@ export class Shell {
     const actual = this.url();
     return this.navMas().some((n) => actual.startsWith(`/${this.rol()}/${n.path}`));
   });
+  protected readonly conPeriodo = computed(() => /\/(inicio|envios|historial|deposito|pagos|ganancias|reportes)$/.test(this.url().split('?')[0]));
+  protected readonly etiquetaPeriodo = computed(() => etiquetaRango(this.per.rango(), new Date()));
   protected readonly rolLabel = computed(() => ROL_LABEL[this.rol()]);
 
   protected abrirMas() {

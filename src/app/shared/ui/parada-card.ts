@@ -5,6 +5,7 @@ import { enCursoMensajero, Envio } from '../../core/models';
 import { AccionesMensajero } from './acciones-mensajero';
 import { DataService } from '../../core/services/data.service';
 import { mapaLink, telefonoLink, whatsappLink } from '../util/contacto';
+import { etiquetaArrastre } from '../../core/periodos';
 import { slugEstado, StatusPill } from './ui';
 
 @Component({
@@ -19,6 +20,9 @@ import { slugEstado, StatusPill } from './ui';
         <fx-status [estado]="e.estado" />
       </header>
 
+      @if (arrastre(); as a) {
+        <span class="fx-arrastre"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ a }}</span>
+      }
       <h3 class="fx-parada-nombre">{{ e.destinatario }}</h3>
       <p class="fx-parada-linea">
         <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
@@ -73,5 +77,6 @@ export class ParadaCard {
   protected readonly mapa = computed(() => mapaLink(this.envio().direccion, this.envio().localidad));
 
   protected readonly slug = computed(() => slugEstado(this.envio().estado));
+  protected readonly arrastre = computed(() => etiquetaArrastre(this.envio(), new Date()));
   protected readonly activo = computed(() => enCursoMensajero(this.envio()));
 }

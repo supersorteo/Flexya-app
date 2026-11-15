@@ -3,7 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { AlertService } from '../../core/services/alert.service';
 import { AuthService } from '../../core/services/auth.service';
+import { enRango } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { EnviosTable } from '../../shared/ui/envios-table';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
 
@@ -14,6 +16,12 @@ import { KpiCard, PageHeader } from '../../shared/ui/ui';
   template: `
     <fx-page-header [title]="esAdmin() ? 'Depósito central' : 'Mi depósito'"
       [subtitle]="esAdmin() ? 'Paquetes que los clientes llevan al depósito y salen a reparto.' : 'Tus paquetes que pasan por el depósito de Flexya.'" />
+
+    <div class="fx-kpi-grid">
+      <fx-kpi label="Recibidos en el período" [value]="recibidos()" foot="entraron al depósito" icon="box-arrow-in-down" tone="teal" />
+      <fx-kpi label="Salieron a reparto" [value]="salidos()" foot="en el período" icon="box-arrow-up" tone="blue" />
+    </div>
+    <p class="fx-muted small mb-2">Existencias actuales: lo que hay en el depósito ahora, sin importar el día.</p>
 
     <div class="fx-kpi-grid">
       <fx-kpi label="En depósito" [value]="enDeposito().length" foot="listos para asignar" icon="building" tone="purple" />
@@ -127,6 +135,11 @@ export class Deposito {
 
   protected readonly esAdmin = computed(() => this.auth.user()?.rol === 'admin');
   private readonly propios = computed(() => this.data.enviosDe(this.auth.user()));
+  private readonly per = inject(PeriodoService);
+  private readonly hitosDelPeriodo = (estado: string) =>
+    this.propios().filter((e) => (e.historial ?? []).some((h) => h.estado === estado && enRango(h.fecha, this.per.rango()))).length;
+  protected readonly recibidos = computed(() => this.hitosDelPeriodo('En depósito'));
+  protected readonly salidos = computed(() => this.hitosDelPeriodo('En reparto'));
   protected readonly enDeposito = computed(() => this.propios().filter((e) => e.estado === 'En depósito'));
   protected readonly enRevision = computed(() => this.propios().filter((e) => e.estado === 'En revisión'));
   protected readonly porRecibir = computed(() => this.propios().filter((e) => this.data.puedeRecepcionar(e)));

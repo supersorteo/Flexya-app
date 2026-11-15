@@ -1,3 +1,4 @@
+import { etiquetaArrastre } from '../../core/periodos';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -67,7 +68,7 @@ interface Fila {
               } @else {
               @let e = f.envio!;
               <tr>
-                <td data-label="Envío"><strong>{{ e.id }}</strong><span class="fx-sub">{{ detalle(e) }}</span></td>
+                <td data-label="Envío"><strong>{{ e.id }}</strong><span class="fx-sub">{{ detalle(e) }}</span>@if (arrastre(e); as a) {<span class="fx-arrastre"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ a }}</span>}</td>
                 @if (rol() !== 'cliente') {
                   <td data-label="Cliente">{{ data.nombreCliente(e.clienteId) }}</td>
                 }
@@ -247,6 +248,10 @@ export class EnviosTable {
 
   protected cancelarRetiro(retiroId: string, envios: Envio[]) {
     void this.accionesEnvio.cancelarRetiro(retiroId, envios);
+  }
+
+  protected arrastre(e: Envio) {
+    return etiquetaArrastre(e, new Date());
   }
 
   protected detalle(e: Envio): string {

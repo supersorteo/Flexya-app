@@ -3,14 +3,17 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink } from '@angular/router';
 import { enCursoMensajero } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { abiertosAlCierre, actividadDelPeriodo, esArrastrado, mover, textoVariacion } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
+import { Desglose } from '../../shared/ui/desglose';
 import { CrearEnvio } from '../envios/crear-envio';
 import { EnviosTable } from '../../shared/ui/envios-table';
 import { Jornada } from '../../shared/ui/jornada';
 import { ParadaCard } from '../../shared/ui/parada-card';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
 import { tarjetaGanancias } from '../pagos/tarjeta-ganancias';
-import { AlertasAdmin, ResumenNegocio } from './resumen-negocio';
+import { AlertasAdmin, calcularResumen, ResumenNegocio } from './resumen-negocio';
 
 interface Kpi {
   label: string;
@@ -23,7 +26,7 @@ interface Kpi {
 
 @Component({
   selector: 'fx-dashboard',
-  imports: [Jornada, KpiCard, PageHeader, EnviosTable, ParadaCard, RouterLink, DatePipe, AlertasAdmin, ResumenNegocio],
+  imports: [Jornada, Desglose, KpiCard, PageHeader, EnviosTable, ParadaCard, RouterLink, DatePipe, AlertasAdmin, ResumenNegocio],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <fx-page-header [eyebrow]="eyebrow()" [title]="titulo()" [subtitle]="subtitulo()">
@@ -49,10 +52,20 @@ interface Kpi {
 
     @if (user()?.rol === 'admin' && data.clientes().length) {
       <fx-resumen-negocio />
+      <fx-desglose [envios]="envios()" [rango]="periodo()" />
       <fx-alertas-admin />
       <div class="mb-3">
         <h2 class="h6 mb-0">Operación ahora</h2>
         <p class="fx-muted small mb-0">Lo que está pasando en este momento, no un período.</p>
+      </div>
+    }
+
+    @if (user()?.rol !== 'admin') {
+      <div class="fx-periodo-barra">
+        <div>
+          <h2 class="h6 mb-0">{{ periodo().nivel === 'dia' ? 'Datos del día' : periodo().nivel === 'semana' ? 'Acumulado de la semana' : 'Acumulado del mes' }}</h2>
+          <p class="fx-muted small mb-0">Lo ya hecho se cuenta en el período; lo pendiente es lo que tenés abierto ahora.</p>
+        </div>
       </div>
     }
 
@@ -68,12 +81,16 @@ interface Kpi {
       }
     </div>
 
+    @if (user()?.rol !== 'admin') {
+      <fx-desglose [envios]="envios()" [rango]="periodo()" />
+    }
+
     <div class="fx-dash-grid">
       <section class="fx-panel">
         <div class="fx-panel-head">
           <div>
-            <div class="fx-panel-title">{{ user()?.rol === 'mensajero' ? 'Tus entregas' : 'Envíos recientes' }}</div>
-            <div class="fx-muted small">Últimos movimientos</div>
+            <div class="fx-panel-title">{{ periodo().nivel === 'dia' ? 'Actividad del día' : 'Actividad del período' }}</div>
+            <div class="fx-muted small">{{ pasado() ? 'Lo que se pidió o se cerró en este período' : 'Lo abierto, incluido lo que viene de días anteriores, y lo cerrado en el período' }}</div>
           </div>
           <a class="small fw-bold text-decoration-none" [routerLink]="['/', user()?.rol, 'envios']">Ver todos →</a>
         </div>
@@ -82,7 +99,7 @@ interface Kpi {
             @for (e of recientes(); track e.id) {
               <fx-parada [envio]="e" />
             } @empty {
-              <p class="fx-muted text-center py-4 mb-0">No tenés envíos asignados por ahora.</p>
+              <p class="fx-muted text-center py-4 mb-0">No tenés actividad en este período.</p>
             }
           </div>
         } @else {
@@ -93,8 +110,8 @@ interface Kpi {
       <section class="fx-panel">
         <div class="fx-panel-head">
           <div>
-            <div class="fx-panel-title">Actividad reciente</div>
-            <div class="fx-muted small">Lo que acaba de pasar</div>
+            <div class="fx-panel-title">Registro de actividad</div>
+            <div class="fx-muted small">Solo lo ocurrido en el período elegido</div>
           </div>
         </div>
         <ul class="fx-activity">
@@ -108,7 +125,7 @@ interface Kpi {
               <time class="fx-muted small">{{ a.fecha | date: 'd MMM, HH:mm' }}</time>
             </li>
           } @empty {
-            <li class="fx-muted small">Todavía no hay actividad.</li>
+            <li class="fx-muted small">No hubo actividad en este período.</li>
           }
         </ul>
       </section>
@@ -123,18 +140,27 @@ export class Dashboard {
 
   protected readonly user = this.auth.user;
   protected readonly envios = computed(() => this.data.enviosDe(this.user()));
-  protected readonly recientes = computed(() => {
-    const lista = this.envios();
-    return this.user()?.rol === 'mensajero'
-      ? [...lista].sort((a, b) => Number(enCursoMensajero(b)) - Number(enCursoMensajero(a))).slice(0, 5)
-      : lista.slice(0, 5);
+  private readonly per = inject(PeriodoService);
+  protected readonly periodo = this.per.rango;
+  protected readonly pasado = this.per.pasado;
+  protected readonly recientes = computed(() => actividadDelPeriodo(this.envios(), this.periodo(), new Date()).slice(0, 10));
+  private readonly resumen = computed(() => {
+    const u = this.user();
+    const comisiones = u?.rol === 'mensajero' ? this.data.comisiones().filter((c) => c.mensajeroId === u.mensajeroId) : [];
+    const nombres = { cliente: () => '', mensajero: () => '', zona: () => '' };
+    return {
+      actual: calcularResumen(this.envios(), comisiones, this.periodo(), new Date(), nombres),
+      anterior: calcularResumen(this.envios(), comisiones, mover(this.periodo(), -1), new Date(), nombres),
+    };
   });
   protected readonly actividades = computed(() => {
     const u = this.user();
     const all = this.data.actividades();
-    if (u?.rol !== 'cliente') return all.slice(0, 6);
+    const { desde, hasta } = this.periodo();
+    const delPeriodo = all.filter((a) => new Date(a.fecha).getTime() >= desde && new Date(a.fecha).getTime() < hasta);
+    if (u?.rol !== 'cliente') return delPeriodo.slice(0, 8);
     const nombre = this.data.nombreCliente(u.clienteId ?? '');
-    return all.filter((a) => a.detalle.includes(nombre) || /Envío|entreg/i.test(a.titulo)).slice(0, 6);
+    return delPeriodo.filter((a) => a.detalle.includes(nombre) || /Envío|entreg/i.test(a.titulo)).slice(0, 8);
   });
 
   protected nuevoEnvio() {
@@ -172,21 +198,28 @@ export class Dashboard {
         { label: 'Unidades en depósito', value: unidadesEnDeposito, foot: 'de paquetes recibidos', icon: 'boxes', tone: 'teal' },
       ];
     }
+    const { actual: r, anterior } = this.resumen();
+    const nivel = this.periodo().nivel;
+    const pendiente = this.pasado();
+    const ahora = new Date();
+    const arrastrados = e.filter((x) => esArrastrado(x, ahora)).length;
+    const viene = arrastrados ? `${arrastrados} ${arrastrados === 1 ? 'viene' : 'vienen'} de días anteriores` : 'nada pendiente de otros días';
+    const cuando = nivel === 'dia' ? (pendiente ? 'ese día' : 'hoy') : 'en el período';
     if (rol === 'mensajero') {
       const g = this.data.gananciasDe(this.user()?.mensajeroId ?? '');
       const pesos = (n: number) => this.currency.transform(n, 'ARS', 'symbol-narrow', '1.0-2') ?? '';
       return [
-        { label: 'Paradas en curso', value: e.filter((x) => enCursoMensajero(x)).length, foot: 'retiros y entregas de hoy', icon: 'geo-alt', tone: 'blue' },
-        { label: 'Entregados', value: count('Entregado'), foot: 'completados', icon: 'check2-circle', tone: 'teal' },
-        { label: 'Incidencias', value: count('Incidencia'), foot: 'con seguimiento', icon: 'exclamation-triangle', tone: 'amber' },
+        { label: pendiente ? 'Quedó pendiente' : 'Por hacer ahora', value: pendiente ? abiertosAlCierre(e, this.periodo()) : e.filter((x) => enCursoMensajero(x)).length, foot: pendiente ? 'abierto al cerrar el período' : viene, icon: 'geo-alt', tone: 'blue' },
+        { label: 'Entregados', value: r.entregados, foot: textoVariacion(r.entregados, anterior.entregados, nivel) || cuando, icon: 'check2-circle', tone: 'teal' },
+        { label: 'Incidencias', value: r.incidencias, foot: cuando, icon: 'exclamation-triangle', tone: 'amber' },
         { ...tarjetaGanancias(g, pesos), enlace: '/mensajero/ganancias' },
       ];
     }
     return [
-      { label: 'Envíos activos', value: e.filter((x) => !['Entregado', 'Cancelado', 'Borrador', 'Devuelto'].includes(x.estado)).length, foot: `${count('En reparto')} en reparto`, icon: 'box-seam', tone: 'blue' },
-      { label: 'Entregados', value: count('Entregado'), foot: 'completados', icon: 'check2-circle', tone: 'teal' },
-      { label: 'Stock de productos', value: stock, foot: 'unidades disponibles', icon: 'boxes', tone: 'purple' },
-      { label: 'En depósito', value: count('En depósito'), foot: 'paquetes recibidos', icon: 'building', tone: 'amber' },
+      { label: 'Solicitados', value: r.solicitados, foot: [`${r.cancelados} cancelados`, textoVariacion(r.solicitados, anterior.solicitados, nivel)].filter(Boolean).join(' · '), icon: 'box-seam', tone: 'blue' },
+      { label: 'Entregados', value: r.entregados, foot: [r.efectividad === null ? cuando : `${r.efectividad}% de efectividad`, textoVariacion(r.entregados, anterior.entregados, nivel)].filter(Boolean).join(' · '), icon: 'check2-circle', tone: 'teal' },
+      { label: pendiente ? 'Quedó pendiente' : 'En curso ahora', value: pendiente ? abiertosAlCierre(e, this.periodo()) : e.filter((x) => !['Entregado', 'Cancelado', 'Borrador', 'Devuelto'].includes(x.estado)).length, foot: pendiente ? 'abierto al cerrar el período' : viene, icon: 'truck', tone: 'purple' },
+      { label: 'Stock de productos', value: stock, foot: `${count('En depósito')} paquetes en depósito`, icon: 'boxes', tone: 'amber' },
     ];
   });
 }

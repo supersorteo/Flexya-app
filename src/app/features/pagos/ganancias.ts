@@ -3,7 +3,9 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Comision, ETIQUETA_COMISION, EstadoComision, Liquidacion } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { enRango } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
 import { LiquidacionDetalleModal } from './liquidacion-detalle-modal';
 import { detallePendiente } from './tarjeta-ganancias';
@@ -19,9 +21,9 @@ const ESTADO_PARA_MENSAJERO: Record<EstadoComision, string> = { Pendiente: 'Acum
 
     <div class="fx-kpi-grid">
       <fx-kpi label="A cobrar" [value]="moneda(g().pendiente)" [foot]="detalle()" icon="hourglass-split" tone="amber" />
-      <fx-kpi label="Ya cobrado" [value]="moneda(g().cobrado)" foot="lo que ya te pagaron" icon="wallet2" tone="teal" />
-      <fx-kpi label="Hoy" [value]="moneda(g().hoy)" foot="ganado hoy" icon="sun" tone="blue" />
-      <fx-kpi label="Esta semana" [value]="moneda(g().semana)" foot="desde el lunes" icon="calendar-week" tone="purple" />
+      <fx-kpi label="Ganado en el período" [value]="moneda(ganado())" [foot]="entregas() + (entregas() === 1 ? ' entrega' : ' entregas')" icon="graph-up-arrow" tone="blue" />
+      <fx-kpi label="Cobrado en el período" [value]="moneda(cobradoPeriodo())" foot="pagos recibidos en el período" icon="wallet2" tone="teal" />
+      <fx-kpi label="Ya cobrado en total" [value]="moneda(g().cobrado)" foot="todo lo que ya te pagaron" icon="check2-circle" tone="purple" />
     </div>
 
     <section class="fx-panel mb-4">
@@ -88,8 +90,16 @@ export class Ganancias {
   protected readonly etiqueta = ETIQUETA_COMISION;
 
   protected readonly g = computed(() => this.data.gananciasDe(this.auth.user()?.mensajeroId ?? ''));
-  protected readonly filas = computed(() => this.data.comisionesDe(this.auth.user()));
-  protected readonly pagos = computed(() => this.data.liquidacionesDe(this.auth.user()));
+  private readonly per = inject(PeriodoService);
+  protected readonly filas = computed(() => this.data.comisionesDe(this.auth.user()).filter((c) => enRango(c.fecha, this.per.rango())));
+  protected readonly ganado = computed(() => Math.round(this.filas().reduce((t, c) => t + c.monto, 0) * 100) / 100);
+  protected readonly entregas = computed(() => this.filas().filter((c) => c.concepto === 'ENTREGA').length);
+  protected readonly pagos = computed(() =>
+    this.data.liquidacionesDe(this.auth.user()).filter((l) => l.estado === 'Generada' || enRango(l.creadaEn, this.per.rango()) || enRango(l.pagadaEn, this.per.rango())),
+  );
+  protected readonly cobradoPeriodo = computed(() =>
+    Math.round(this.data.liquidacionesDe(this.auth.user()).filter((l) => l.estado === 'Pagada' && enRango(l.pagadaEn, this.per.rango())).reduce((t, l) => t + l.neto, 0) * 100) / 100,
+  );
   protected readonly detalle = computed(() => detallePendiente(this.g(), (n) => this.moneda(n)));
 
   protected moneda(n: number): string {

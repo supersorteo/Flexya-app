@@ -68,3 +68,20 @@
 .fx-proxima-pie { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
 .fx-proxima-ir { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--fx-primary); }
 .fx-jornada-libre { display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 14px; border-radius: var(--fx-r-md); background: color-mix(in srgb, var(--fx-on-brand) 12%, transparent); font-size: var(--fx-fs-md); i { font-size: 20px; color: var(--fx-accent); } }
+
+/* Pendientes que vienen de otro día y selector de período */
+.fx-arrastre { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-top: 4px; padding: 2px 9px; border-radius: 999px; background: var(--fx-warning-soft); color: var(--fx-warning-text); border: 1px solid var(--fx-warning-border); font-size: var(--fx-fs-xs); font-weight: 700; white-space: nowrap; }
+.fx-periodo-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 14px; }
+.fx-tabs--periodo { margin-bottom: 0; width: auto; max-width: none; button { flex: 0 0 auto; padding: 0 14px; } }
+
+.fx-periodo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.fx-periodo-nav { display: inline-flex; align-items: center; gap: 6px; }
+.fx-periodo-etiqueta { min-width: 160px; text-align: center; font-weight: 700; font-size: var(--fx-fs-md); text-transform: capitalize; }
+.fx-desglose-et { flex: 0 0 96px; font-size: var(--fx-fs-sm); color: var(--fx-text-soft); text-transform: capitalize; }
+.fx-desglose-n { flex: none; min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; font-size: var(--fx-fs-sm); color: var(--fx-text-soft); strong { color: var(--fx-text); } }
+.fx-desglose .fx-bars li { display: flex; align-items: center; gap: 12px; padding: 8px 18px; }
+.fx-desglose .fx-bar { flex: 1; height: 10px; border-radius: 6px; background: var(--fx-surface-3); overflow: hidden; span { display: block; height: 100%; background: var(--fx-primary); border-radius: 6px; } }
+
+/* Barra de período global, debajo de la barra superior */
+.fx-periodobar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 16px; background: var(--fx-surface); border-bottom: 2px solid var(--fx-border); position: sticky; top: var(--fx-topbar-h); z-index: 4; }
+.fx-viendo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--fx-r-md); background: var(--fx-warning-soft); border: 1px solid var(--fx-warning-border); color: var(--fx-warning-text); font-size: var(--fx-fs-sm); i { font-size: 16px; } span { flex: 1 1 200px; } }

@@ -98,3 +98,45 @@ describe('Navegación del shell', () => {
     expect(el.querySelector('.fx-brand-mark')).toBeNull();
   });
 });
+
+describe('Período global en el shell', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    for (const m of ['groupCollapsed', 'groupEnd', 'log', 'table'] as const) vi.spyOn(console, m).mockImplementation(() => undefined);
+    TestBed.configureTestingModule({ providers: [provideRouter(routes, withComponentInputBinding())] });
+  });
+
+  async function admin(url: string) {
+    await TestBed.inject(AuthService).configurarSuperadmin({ nombre: 'Marina Ríos', email: 'admin@flexya.com', clave: 'Admin1234' });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url);
+    await esperar(() => !!(harness.routeNativeElement as HTMLElement).querySelector('.fx-bottomnav'));
+    harness.detectChanges();
+    return { harness, el: harness.routeNativeElement as HTMLElement };
+  }
+
+  it('el selector de período aparece en las secciones operativas, abre en Día = hoy y no en las de datos maestros', async () => {
+    const { harness, el } = await admin('/admin/envios');
+    expect([...el.querySelectorAll('.fx-periodobar [role=tab]')].map((b) => b.textContent!.trim())).toEqual(['Día', 'Semana', 'Mes']);
+    expect(el.querySelector('.fx-periodo-etiqueta')!.textContent).toContain('Hoy');
+    expect(el.querySelector('.fx-viendo')).toBeNull();
+    await harness.navigateByUrl('/admin/clientes');
+    harness.detectChanges();
+    expect(el.querySelector('.fx-periodobar')).toBeNull();
+  });
+
+  it('al ir a un día anterior avisa que no es hoy y el período se mantiene al cambiar de sección', async () => {
+    const { harness, el } = await admin('/admin/inicio');
+    el.querySelector<HTMLButtonElement>('[aria-label="Período anterior"]')!.click();
+    harness.detectChanges();
+    expect(el.querySelector('.fx-viendo')!.textContent).toContain('Estás viendo');
+    await harness.navigateByUrl('/admin/pagos');
+    harness.detectChanges();
+    expect(el.querySelector('.fx-viendo')).not.toBeNull();
+    expect(el.querySelector('.fx-periodo-etiqueta')!.textContent).toContain('Ayer');
+    el.querySelector<HTMLButtonElement>('.fx-viendo button')!.click();
+    harness.detectChanges();
+    expect(el.querySelector('.fx-viendo')).toBeNull();
+  });
+});

@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ClienteInput, Comision, Envio, Liquidacion, MensajeroInput } from '../../core/models';
 import { DataService } from '../../core/services/data.service';
+import { mover } from '../../core/periodos';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { AlertasAdmin, ResumenNegocio, calcularAlertas, calcularResumen, formatoDuracion, inicioPeriodo } from './resumen-negocio';
 
 const AHORA = new Date(2030, 0, 15, 12, 0, 0);
@@ -226,7 +228,7 @@ describe('Pantallas del resumen del superadmin', () => {
     expect(el.querySelector('a[href="/admin/envios"]')).not.toBeNull();
   });
 
-  it('el resumen calcula con lo que realmente pasó y cambia al elegir otro período', () => {
+  it('el resumen calcula con lo que realmente pasó y responde al período global', () => {
     const m = data.agregarMensajero(mensajero).mensajero.id;
     const e = data.crearEnvio({ ...destino, retiro: 'deposito' }, clienteId);
     data.recepcionar(e.id);
@@ -242,12 +244,11 @@ describe('Pantallas del resumen del superadmin', () => {
     expect(el.textContent).toContain('Mensajero');
     expect(el.textContent).toContain('Santiago Pereyra');
 
-    const botones = [...el.querySelectorAll<HTMLButtonElement>('[role=tab]')];
-    expect(botones.map((b) => b.textContent!.trim())).toEqual(['Hoy', '7 días', '30 días', 'Todo']);
-    expect(botones[2].classList.contains('active')).toBe(true);
-    botones[0].click();
+
+    const periodo = TestBed.inject(PeriodoService);
+    periodo.rango.set(mover(periodo.rango(), -1));
     f.detectChanges();
-    expect(botones[0].classList.contains('active')).toBe(true);
-    expect(el.textContent).toContain('Entregados');
+    expect(el.textContent).toContain('Resumen del negocio');
+    expect(f.nativeElement.querySelector('.fx-kpi-value')!.textContent).toContain('0');
   });
 });

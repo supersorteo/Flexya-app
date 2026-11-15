@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { actividadDelPeriodo } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
+import { calcularResumen } from '../dashboard/resumen-negocio';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
 
 interface Barra {
@@ -23,10 +26,10 @@ function barras(conteo: Map<string, number>): Barra[] {
     <fx-page-header title="Reportes" subtitle="Métricas simples para tomar mejores decisiones." />
 
     <div class="fx-kpi-grid">
-      <fx-kpi label="Envíos totales" [value]="total()" foot="registrados" icon="box-seam" tone="blue" />
+      <fx-kpi label="Envíos del período" [value]="total()" foot="abiertos y cerrados" icon="box-seam" tone="blue" />
       <fx-kpi label="Efectividad" [value]="efectividad() === null ? '—' : efectividad() + '%'" foot="entregados sobre cerrados" icon="check2-circle" tone="teal" />
-      <fx-kpi label="Incidencias" [value]="incidencias()" foot="requieren seguimiento" icon="exclamation-triangle" tone="amber" />
-      <fx-kpi label="Facturación" [value]="facturacion()" foot="envíos entregados" icon="cash-coin" tone="purple" />
+      <fx-kpi label="Incidencias" [value]="incidencias()" foot="ocurridas en el período" icon="exclamation-triangle" tone="amber" />
+      <fx-kpi label="Facturación" [value]="facturacion()" foot="entregados en el período" icon="cash-coin" tone="purple" />
     </div>
 
     <div class="row g-3">
@@ -53,23 +56,23 @@ function barras(conteo: Map<string, number>): Barra[] {
 export class Reportes {
   private readonly data = inject(DataService);
 
-  protected readonly total = computed(() => this.data.envios().length);
-  protected readonly incidencias = computed(() => this.data.envios().filter((e) => e.estado === 'Incidencia').length);
-  protected readonly efectividad = computed(() => {
-    const e = this.data.envios();
-    const ok = e.filter((x) => x.estado === 'Entregado').length;
-    const cerrados = ok + e.filter((x) => ['Incidencia', 'Cancelado'].includes(x.estado)).length;
-    return cerrados ? Math.round((ok / cerrados) * 100) : null;
-  });
-  protected readonly facturacion = computed(() => {
-    const suma = this.data.envios().filter((e) => e.estado === 'Entregado').reduce((s, e) => s + e.importe, 0);
-    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(suma);
-  });
+  private readonly per = inject(PeriodoService);
+  private readonly delPeriodo = computed(() => actividadDelPeriodo(this.data.envios(), this.per.rango(), new Date()));
+  private readonly resumen = computed(() =>
+    calcularResumen(this.data.envios(), [], this.per.rango(), new Date(), { cliente: () => '', mensajero: () => '', zona: () => '' }),
+  );
+
+  protected readonly total = computed(() => this.delPeriodo().length);
+  protected readonly incidencias = computed(() => this.resumen().incidencias);
+  protected readonly efectividad = computed(() => this.resumen().efectividad);
+  protected readonly facturacion = computed(() =>
+    new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(this.resumen().ingresos),
+  );
 
   protected readonly grupos = computed(() => {
     const por = (clave: (e: ReturnType<DataService['envios']>[number]) => string) => {
       const m = new Map<string, number>();
-      this.data.envios().forEach((e) => m.set(clave(e), (m.get(clave(e)) ?? 0) + 1));
+      this.delPeriodo().forEach((e) => m.set(clave(e), (m.get(clave(e)) ?? 0) + 1));
       return barras(m);
     };
     return [

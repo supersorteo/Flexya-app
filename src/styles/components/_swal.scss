@@ -1,27 +1,48 @@
-.fx-cred { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--fx-line); border-radius: 12px; background: var(--fx-surface-2);
+@use '../abstracts/mixins' as *;
+.fx-cred { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--fx-border); border-radius: 12px; background: var(--fx-surface-2);
   small { display: block; font-size: 12px; font-weight: 700; color: var(--fx-text-soft); }
-  code { font-size: 15px; color: var(--fx-ink); word-break: break-all; }
+  code { font-size: 15px; color: var(--fx-text); word-break: break-all; }
 }
 
-/* SweetAlert2 con la identidad de Flexya */
-.swal2-container { z-index: 2000; }
-.swal2-popup.fx-swal {
-  font-family: var(--fx-font-body); color: var(--fx-ink); border-radius: 18px; padding: 1.5rem 1.25rem 1.25rem; border: 1px solid var(--fx-border-strong);
-  box-shadow: 0 24px 70px rgba(12, 26, 48, 0.35); width: min(26em, calc(100vw - 28px));
+/* SweetAlert2 con la identidad de Flexya: todo sale de los tokens, así sigue al tema claro y oscuro */
+.swal2-container {
+  z-index: 2000;
+  --swal2-backdrop: color-mix(in srgb, var(--fx-brand) 62%, transparent);
 }
-.fx-swal .swal2-title.fx-swal-title { font-family: var(--fx-font-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: var(--fx-ink); padding: 0.4rem 0.5rem 0; }
-.fx-swal .swal2-html-container { font-size: 0.92rem; color: var(--fx-muted); margin: 0.6rem 0.4rem 0; }
-.fx-swal .swal2-html-container.fx-swal-html { text-align: left; }
-.fx-swal .swal2-actions.fx-swal-actions { gap: 10px; margin-top: 1.3rem; width: 100%; flex-wrap: nowrap; .btn { flex: 1; margin: 0; } }
-.fx-swal .swal2-input-label { justify-content: flex-start; margin: 1rem 0 0.35rem; }
-.fx-swal textarea.swal2-textarea.form-control { margin: 0.25rem 0 0; width: 100%; min-height: 96px; font-size: 14px; box-shadow: none; }
-.fx-swal .swal2-validation-message.fx-swal-error { background: var(--fx-rose-soft); color: var(--fx-danger-text); font-size: 0.85rem; border-radius: 10px; margin: 0.8rem 0 0; }
-.fx-swal .swal2-success [class^='swal2-success-line'] { background-color: var(--fx-teal); }
-.fx-swal .swal2-success .swal2-success-ring { border-color: rgba(32, 184, 152, 0.3); }
-.fx-swal .swal2-timer-progress-bar { background: rgba(53, 106, 230, 0.35); }
+.swal2-popup.fx-swal {
+  --swal2-background: var(--fx-surface);
+  --swal2-color: var(--fx-text);
+  --swal2-border: 0;
+  @include tarjeta;
+  font-family: var(--fx-font-body); color: var(--fx-text); border-radius: var(--fx-r-xl); padding: 1.5rem 1.25rem 1.25rem;
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--fx-brand) 45%, transparent); width: min(26em, calc(100vw - 28px));
+}
+.fx-swal .swal2-title.fx-swal-title { font-family: var(--fx-font-display); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: var(--fx-text); padding: 0.4rem 0.5rem 0; }
+.fx-swal .swal2-html-container { font-size: 0.95rem; color: var(--fx-text-soft); margin: 0.6rem 0.4rem 0; }
+.fx-swal .swal2-html-container.fx-swal-html { text-align: center; }
+.fx-swal .swal2-actions.fx-swal-actions { gap: 10px; margin-top: 1.3rem; width: 100%; flex-wrap: nowrap; .btn { flex: 1; margin: 0; min-height: 48px; } }
+.fx-swal .swal2-input-label { justify-content: flex-start; margin: 1rem 0 0.35rem; color: var(--fx-text); }
+.fx-swal textarea.swal2-textarea.form-control, .fx-swal input.swal2-input.form-control { margin: 0.25rem 0 0; width: 100%; min-height: 96px; font-size: 14px; background: var(--fx-field-bg); color: var(--fx-text); }
+.fx-swal input.swal2-input.form-control { min-height: 46px; }
+.fx-swal .swal2-validation-message.fx-swal-error { background: var(--fx-danger-soft); color: var(--fx-danger-text); font-size: 0.85rem; border-radius: var(--fx-r-md); margin: 0.8rem 0 0; }
+.fx-swal .swal2-timer-progress-bar { background: color-mix(in srgb, var(--fx-primary) 55%, transparent); }
+
+/* Íconos: un color de tema por tipo; el fondo del círculo de éxito es el de la tarjeta, no blanco */
+.fx-swal .swal2-icon { background: transparent; }
+.fx-swal .swal2-icon.swal2-warning { color: var(--fx-warning); border-color: color-mix(in srgb, var(--fx-warning) 55%, transparent); }
+.fx-swal .swal2-icon.swal2-error { color: var(--fx-danger); border-color: color-mix(in srgb, var(--fx-danger) 55%, transparent); [class^='swal2-x-mark-line'] { background-color: var(--fx-danger); } }
+.fx-swal .swal2-icon.swal2-info { color: var(--fx-primary); border-color: color-mix(in srgb, var(--fx-primary) 55%, transparent); }
+.fx-swal .swal2-icon.swal2-question { color: var(--fx-violet); border-color: color-mix(in srgb, var(--fx-violet) 55%, transparent); }
+.fx-swal--peligro .swal2-icon.swal2-warning { color: var(--fx-danger); border-color: color-mix(in srgb, var(--fx-danger) 55%, transparent); }
+.fx-swal--info .swal2-icon.swal2-question { color: var(--fx-primary); border-color: color-mix(in srgb, var(--fx-primary) 55%, transparent); }
+.fx-swal .swal2-icon.swal2-success { color: var(--fx-success); border-color: color-mix(in srgb, var(--fx-success) 40%, transparent);
+  [class^='swal2-success-line'] { background-color: var(--fx-success); }
+  .swal2-success-ring { border-color: color-mix(in srgb, var(--fx-success) 30%, transparent); }
+  [class^='swal2-success-circular-line'], .swal2-success-fix { background: var(--fx-surface); }
+}
 
 .swal2-popup.fx-swal.fx-swal-toast {
-  width: min(24em, calc(100vw - 28px)); padding: 0.7rem 1rem; border-radius: 14px; align-items: center; margin-top: 8px;
+  width: min(24em, calc(100vw - 28px)); padding: 0.7rem 1rem; border-radius: var(--fx-r-lg); align-items: center; margin-top: 8px;
   .swal2-title { font-family: var(--fx-font-body); font-size: 0.92rem; font-weight: 600; text-align: left; margin: 0 0.4rem; padding: 0; }
   .swal2-icon { width: 1.9em; height: 1.9em; min-width: 1.9em; margin: 0 0.3rem 0 0; }
 }

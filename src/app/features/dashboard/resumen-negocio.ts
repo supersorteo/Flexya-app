@@ -1,18 +1,14 @@
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Comision, Envio, Liquidacion, MAX_INTENTOS, fechaLocal, hoyISO } from '../../core/models';
+import { aRango, inicioPeriodo, PERIODOS, Periodo, Rango } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { KpiCard } from '../../shared/ui/ui';
 
-export type Periodo = 'hoy' | '7d' | '30d' | 'todo';
-
-export const PERIODOS: { id: Periodo; etiqueta: string }[] = [
-  { id: 'hoy', etiqueta: 'Hoy' },
-  { id: '7d', etiqueta: '7 días' },
-  { id: '30d', etiqueta: '30 días' },
-  { id: 'todo', etiqueta: 'Todo' },
-];
+export { PERIODOS, inicioPeriodo };
+export type { Periodo, Rango };
 
 export interface FilaRanking {
   clave: string;
@@ -56,14 +52,6 @@ export interface Alerta {
   enlace: string;
 }
 
-export function inicioPeriodo(periodo: Periodo, ahora: Date): Date {
-  const dia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-  if (periodo === 'todo') return new Date(0);
-  if (periodo === '7d') dia.setDate(dia.getDate() - 6);
-  if (periodo === '30d') dia.setDate(dia.getDate() - 29);
-  return dia;
-}
-
 export function formatoDuracion(ms: number | null): string {
   if (ms === null) return '—';
   const horas = ms / 3_600_000;
@@ -91,14 +79,15 @@ function ranking(
     .slice(0, tope);
 }
 
-export function calcularResumen(envios: Envio[], comisiones: Comision[], periodo: Periodo, ahora: Date, nombres: Nombres): ResumenNegocioDatos {
-  const desde = inicioPeriodo(periodo, ahora).getTime();
+export function calcularResumen(envios: Envio[], comisiones: Comision[], periodo: Periodo | Rango, ahora: Date, nombres: Nombres): ResumenNegocioDatos {
+  const { desde, hasta } = aRango(periodo, ahora);
+  const dentro = (t: number) => t >= desde && t < hasta;
   const reales = envios.filter((e) => e.estado !== 'Borrador');
-  const solicitados = reales.filter((e) => tiempo(e.creadoEn) >= desde);
-  const entregados = reales.filter((e) => e.estado === 'Entregado' && tiempo(e.entregadoEn) >= desde);
-  const devueltos = reales.filter((e) => e.estado === 'Devuelto' && ultimoHito(e, 'Devuelto') >= desde);
-  const cancelados = reales.filter((e) => e.estado === 'Cancelado' && ultimoHito(e, 'Cancelado') >= desde);
-  const incidencias = reales.reduce((n, e) => n + hitos(e).filter((h) => h.estado === 'Incidencia' && tiempo(h.fecha) >= desde).length, 0);
+  const solicitados = reales.filter((e) => dentro(tiempo(e.creadoEn)));
+  const entregados = reales.filter((e) => e.estado === 'Entregado' && dentro(tiempo(e.entregadoEn)));
+  const devueltos = reales.filter((e) => e.estado === 'Devuelto' && dentro(ultimoHito(e, 'Devuelto')));
+  const cancelados = reales.filter((e) => e.estado === 'Cancelado' && dentro(ultimoHito(e, 'Cancelado')));
+  const incidencias = reales.reduce((n, e) => n + hitos(e).filter((h) => h.estado === 'Incidencia' && dentro(tiempo(h.fecha))).length, 0);
   const cerrados = entregados.length + devueltos.length;
 
   const totales = entregados.map((e) => tiempo(e.entregadoEn) - tiempo(e.creadoEn)).filter(Number.isFinite);
@@ -112,11 +101,11 @@ export function calcularResumen(envios: Envio[], comisiones: Comision[], periodo
   const retiros = reales
     .filter((e) => e.retiro !== 'deposito' && e.fechaRetiro)
     .map((e) => ({ e, hito: primerHito(e, 'Retirado') }))
-    .filter((r) => r.hito && tiempo(r.hito.fecha) >= desde);
+    .filter((r) => r.hito && dentro(tiempo(r.hito.fecha)));
   const puntuales = retiros.filter((r) => fechaLocal(r.hito!.fecha) <= r.e.fechaRetiro!).length;
 
   const ingresos = redondear(entregados.reduce((t, e) => t + e.importe, 0));
-  const delPeriodo = comisiones.filter((c) => tiempo(c.fecha) >= desde);
+  const delPeriodo = comisiones.filter((c) => dentro(tiempo(c.fecha)));
   const totalComisiones = redondear(delPeriodo.reduce((t, c) => t + c.monto, 0));
 
   const porCliente = new Map<string, { cantidad: number; monto: number }>();
@@ -236,11 +225,6 @@ export class AlertasAdmin {
     <section class="mb-4" aria-label="Resumen del negocio">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <h2 class="h6 mb-0">Resumen del negocio</h2>
-        <div class="fx-tabs mb-0" role="tablist" aria-label="Período">
-          @for (p of periodos; track p.id) {
-            <button type="button" role="tab" [class.active]="periodo() === p.id" [attr.aria-selected]="periodo() === p.id" (click)="periodo.set(p.id)">{{ p.etiqueta }}</button>
-          }
-        </div>
       </div>
 
       <div class="fx-kpi-grid">
@@ -306,8 +290,7 @@ export class AlertasAdmin {
 })
 export class ResumenNegocio {
   private readonly data = inject(DataService);
-  protected readonly periodos = PERIODOS;
-  protected readonly periodo = signal<Periodo>('30d');
+  protected readonly periodo = inject(PeriodoService).rango;
   protected readonly duracion = formatoDuracion;
 
   protected readonly r = computed(() =>

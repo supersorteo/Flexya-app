@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
+import { actividadDelPeriodo } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { EnviosTable } from '../../shared/ui/envios-table';
 import { CrearEnvio } from './crear-envio';
 import { PageHeader } from '../../shared/ui/ui';
@@ -20,7 +22,7 @@ const ESTADOS = ['Todos', 'Borrador', 'Pendiente', 'Retiro asignado', 'Retirado'
 
     <section class="fx-panel">
       <div class="fx-panel-head flex-wrap gap-2">
-        <div class="fx-muted small">{{ filtrados().length }} registros</div>
+        <div class="fx-muted small">{{ filtrados().length }} registros en el período</div>
         <div class="d-flex gap-2 flex-grow-1 justify-content-end fx-filters">
           <input type="search" class="form-control" placeholder="Buscar envío, destinatario…" aria-label="Buscar"
             [value]="q()" (input)="q.set($any($event.target).value)" />
@@ -57,6 +59,7 @@ export class EnviosList {
   private readonly data = inject(DataService);
   private readonly crear = inject(CrearEnvio);
   protected readonly user = inject(AuthService).user;
+  private readonly per = inject(PeriodoService);
   protected readonly estados = ESTADOS;
   protected readonly q = signal('');
   protected readonly estado = signal('Todos');
@@ -71,8 +74,9 @@ export class EnviosList {
 
   protected readonly filtrados = computed(() => {
     const q = this.q().trim().toLowerCase();
-    return this.data
-      .enviosDe(this.user())
+    const propios = this.data.enviosDe(this.user());
+    const borradores = this.per.esActual() ? propios.filter((e) => e.estado === 'Borrador') : [];
+    return [...borradores, ...actividadDelPeriodo(propios, this.per.rango(), new Date())]
       .filter((e) => this.estado() === 'Todos' || e.estado === this.estado())
       .filter(
         (e) =>

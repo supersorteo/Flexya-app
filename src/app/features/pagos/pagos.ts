@@ -5,7 +5,10 @@ import { AbstractControl, FormControl, FormGroup, NonNullableFormBuilder, Reacti
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ConfigPagos, Liquidacion, Mensajero, ZONAS } from '../../core/models';
 import { AlertService } from '../../core/services/alert.service';
+import { enRango } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
+import { calcularResumen } from '../dashboard/resumen-negocio';
 import { KpiCard, PageHeader } from '../../shared/ui/ui';
 import { LiquidacionDetalleModal } from './liquidacion-detalle-modal';
 import { LiquidacionModal } from './liquidacion-modal';
@@ -33,9 +36,9 @@ const porcentajeOpcional = (c: AbstractControl): ValidationErrors | null => {
     </ol>
 
     <div class="fx-kpi-grid">
-      <fx-kpi label="Ingresos por entregas" [value]="moneda(resumen().ingresos)" foot="lo que cobraste por envíos entregados" icon="cash-coin" tone="teal" />
-      <fx-kpi label="Para los mensajeros" [value]="moneda(resumen().comisionado)" foot="lo que ganaron en total" icon="truck" tone="blue" />
-      <fx-kpi label="Falta pagar" [value]="moneda(resumen().pendiente)" foot="ganado y todavía no cobrado" icon="hourglass-split" tone="amber" />
+      <fx-kpi label="Ingresos por entregas" [value]="moneda(resumen().ingresos)" foot="envíos entregados en el período" icon="cash-coin" tone="teal" />
+      <fx-kpi label="Para los mensajeros" [value]="moneda(resumen().comisionado)" foot="comisiones del período" icon="truck" tone="blue" />
+      <fx-kpi label="Falta pagar" [value]="moneda(resumen().pendiente)" foot="saldo vivo: ganado y todavía no cobrado" icon="hourglass-split" tone="amber" />
       <fx-kpi label="Te queda a vos" [value]="moneda(resumen().margen)" foot="ingresos menos lo de los mensajeros" icon="graph-up-arrow" tone="purple" />
     </div>
 
@@ -162,7 +165,7 @@ const porcentajeOpcional = (c: AbstractControl): ValidationErrors | null => {
           <div class="fx-panel-title"><span class="fx-paso-num">3</span> Pagos</div>
           <div class="fx-muted small">"Generada" quiere decir que falta pagarla. "Pagada", que ya le pagaste.</div>
         </div>
-        <span class="fx-muted small">{{ liquidaciones().length }} en total</span>
+        <span class="fx-muted small">{{ liquidaciones().length }} en el período, más las que falta pagar</span>
       </div>
       @if (liquidaciones().length) {
         <div class="fx-table-scroll" tabindex="0" role="region" aria-label="Liquidaciones">
@@ -203,8 +206,14 @@ export class Pagos {
 
   protected readonly zonas = ZONAS;
   protected readonly mensajeros = computed(() => this.data.mensajeros());
-  protected readonly resumen = computed(() => this.data.resumenPagos());
-  protected readonly liquidaciones = computed(() => this.data.liquidaciones());
+  private readonly per = inject(PeriodoService);
+  protected readonly resumen = computed(() => {
+    const periodo = calcularResumen(this.data.envios(), this.data.comisiones(), this.per.rango(), new Date(), { cliente: () => '', mensajero: () => '', zona: () => '' });
+    return { ingresos: periodo.ingresos, comisionado: periodo.comisiones, margen: periodo.margen, pendiente: this.data.resumenPagos().pendiente };
+  });
+  protected readonly liquidaciones = computed(() =>
+    this.data.liquidaciones().filter((l) => l.estado === 'Generada' || enRango(l.creadaEn, this.per.rango()) || enRango(l.pagadaEn, this.per.rango())),
+  );
   protected readonly porLiquidar = computed(() =>
     this.data
       .mensajeros()

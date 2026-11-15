@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { enCursoMensajero } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
+import { actividadDelPeriodo } from '../../core/periodos';
 import { DataService } from '../../core/services/data.service';
+import { PeriodoService } from '../../core/services/periodo.service';
 import { ParadaCard } from '../../shared/ui/parada-card';
 import { PageHeader } from '../../shared/ui/ui';
 
@@ -27,7 +29,7 @@ import { PageHeader } from '../../shared/ui/ui';
       } @empty {
         <div class="fx-panel text-center fx-muted py-5 px-3 fx-paradas-vacio">
           <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-          {{ vista() === 'activas' ? 'No tenés envíos en curso por ahora.' : 'Todavía no cerraste ningún envío.' }}
+          {{ vista() === 'activas' ? 'No tenés envíos en curso en este período.' : 'No cerraste ningún envío en este período.' }}
         </div>
       }
     </div>
@@ -38,7 +40,8 @@ export class MisParadas {
   private readonly auth = inject(AuthService);
 
   protected readonly vista = signal<'activas' | 'cerradas'>('activas');
-  private readonly propios = computed(() => this.data.enviosDe(this.auth.user()));
+  private readonly per = inject(PeriodoService);
+  private readonly propios = computed(() => actividadDelPeriodo(this.data.enviosDe(this.auth.user()), this.per.rango(), new Date()));
   protected readonly activas = computed(() => this.propios().filter((e) => enCursoMensajero(e)));
   protected readonly cerradas = computed(() => this.propios().filter((e) => !enCursoMensajero(e)));
   protected readonly lista = computed(() => (this.vista() === 'activas' ? this.activas() : this.cerradas()));
