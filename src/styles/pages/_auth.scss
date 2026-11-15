@@ -29,7 +29,9 @@
 .fx-fuerza[data-nivel='2'] .fx-fuerza-barras span:nth-child(-n + 2) { background: var(--fx-amber); }
 .fx-fuerza[data-nivel='3'] .fx-fuerza-barras span:nth-child(-n + 3) { background: color-mix(in srgb, var(--fx-success) 60%, var(--fx-warning)); }
 .fx-fuerza[data-nivel='4'] .fx-fuerza-barras span:nth-child(-n + 4) { background: var(--fx-teal); }
-.fx-requisitos { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 3px; li { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--fx-muted); &.ok { color: var(--fx-success-text); i { color: var(--fx-teal); } } } }
+.fx-ayuda-error { margin-top: 6px; }
+.fx-ayuda-msg { display: flex; align-items: center; gap: 6px; font-size: var(--fx-fs-sm); font-weight: 600; color: var(--fx-danger-text); }
+.fx-requisitos { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; animation: fx-step-in 0.18s ease-out; li { display: flex; align-items: center; gap: 7px; font-size: var(--fx-fs-sm); color: var(--fx-danger-text); i { font-size: 13px; color: var(--fx-danger); } } }
 
 .fx-cuenta-resumen { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; i { font-size: 38px; color: var(--fx-blue); } strong { display: block; font-size: 15px; } small { color: var(--fx-muted); } }
 .fx-cuenta-grid { align-items: start; }

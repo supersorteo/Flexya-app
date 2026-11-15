@@ -1,4 +1,5 @@
 .fx-brand { display: flex; align-items: center; gap: 10px; }
 .fx-brand-name { font-family: var(--fx-font-display); font-weight: 700; font-size: 21px; letter-spacing: -0.03em; }
 .fx-logo { display: inline-flex; align-items: center; gap: 10px; color: inherit; }
+.fx-logo-icon { display: block; flex: 0 0 auto; object-fit: contain; }
 .fx-logo-destino { fill: var(--fx-accent); }

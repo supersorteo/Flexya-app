@@ -90,6 +90,11 @@ interface Fila {
                         <i class="bi bi-eye"></i><span class="d-none d-xl-inline">Detalle</span>
                       </button>
                     }
+                    @if (rol() !== 'mensajero' && data.puedeReprogramar(e) && arrastre(e)) {
+                      <button type="button" class="btn btn-sm btn-primary" (click)="reprogramar(e)" [attr.aria-label]="'Reprogramar el retiro de ' + e.id" title="Reprogramar retiro">
+                        <i class="bi bi-calendar-event"></i><span class="d-none d-xl-inline">Reprogramar</span>
+                      </button>
+                    }
                     @if (rol() === 'cliente' && data.editableCliente(e)) {
                       <button type="button" class="btn btn-sm btn-outline-warning" (click)="editar(e)" [attr.aria-label]="'Editar ' + e.id" title="Editar envío">
                         <i class="bi bi-pencil"></i><span class="d-none d-xl-inline">Editar</span>
@@ -275,6 +280,10 @@ export class EnviosTable {
       () => undefined,
       () => undefined,
     );
+  }
+
+  protected reprogramar(e: Envio) {
+    void this.accionesEnvio.reprogramar(e);
   }
 
   protected editar(e: Envio) {

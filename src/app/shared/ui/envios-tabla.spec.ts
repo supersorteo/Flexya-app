@@ -483,4 +483,28 @@ describe('Tabla de envíos', () => {
       expect(data.asignar(e.id, m.id)).toBe(true);
     });
   });
+
+  describe('reprogramar lo que quedó pendiente de otro día', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('el botón aparece solo cuando el envío viene de un día anterior y reprograma el retiro', async () => {
+      const c = await clienteConSesion();
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2030, 0, 15, 9, 0));
+      const e = data.crearEnvio({ ...entrega, retiro: 'domicilio' }, c.id);
+      expect(tabla().titulos()).not.toContain('Reprogramar retiro');
+
+      vi.setSystemTime(new Date(2030, 0, 16, 9, 0));
+      const { botones, titulos } = tabla();
+      expect(titulos()).toEqual(['Ver detalle', 'Reprogramar retiro', 'Editar envío', 'Cancelar envío']);
+      expect(tabla().el.textContent).toContain('Viene de ayer');
+
+      (alerta as Record<string, unknown>)['pedirReprogramacion'] = vi.fn().mockResolvedValue({ fecha: '2030-01-17', franja: 'tarde' });
+      botones().find((b) => b.title === 'Reprogramar retiro')!.click();
+      await esperar();
+      expect(data.envios().find((x) => x.id === e.id)).toMatchObject({ fechaRetiro: '2030-01-17', retiroProgramado: true, franja: 'tarde' });
+      expect(alerta.exito).toHaveBeenCalledWith(expect.stringContaining('17/01'));
+      expect(tabla().titulos()).not.toContain('Reprogramar retiro');
+    });
+  });
 });

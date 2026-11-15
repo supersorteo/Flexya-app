@@ -94,7 +94,7 @@ describe('Navegación del shell', () => {
 
   it('la marca es el logotipo en SVG, no tres rayitas sueltas', async () => {
     const { el } = await adminEnInicio();
-    expect(el.querySelector('.fx-sidebar fx-logo svg')).not.toBeNull();
+    expect(el.querySelector('.fx-sidebar fx-logo img')?.getAttribute('src')).toBe('brand/flexya-icon-128.webp');
     expect(el.querySelector('.fx-brand-mark')).toBeNull();
   });
 });

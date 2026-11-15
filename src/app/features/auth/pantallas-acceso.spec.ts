@@ -55,7 +55,7 @@ describe('Pantallas de acceso', () => {
   }
 
   describe('configuración inicial', () => {
-    it('crea al superadmin, mide la fuerza de la contraseña y entra a su panel', async () => {
+    it('crea al superadmin, mide la fuerza de la contraseña sin mostrar reglas de más y entra a su panel', async () => {
       const f = TestBed.createComponent(ConfiguracionInicial);
       f.detectChanges();
       const el = f.nativeElement as HTMLElement;
@@ -64,7 +64,8 @@ describe('Pantallas de acceso', () => {
       escribir(el, '#cfg-email', 'admin@flexya.com');
       escribir(el, '#cfg-clave', 'Admin1234');
       f.detectChanges();
-      expect(el.querySelectorAll('.fx-requisitos li.ok')).toHaveLength(3);
+      expect(el.querySelector('.fx-fuerza')).not.toBeNull();
+      expect(el.querySelector('.fx-requisitos')).toBeNull();
 
       escribir(el, '#cfg-confirmar', 'Distinta123');
       enviar(el);
@@ -90,7 +91,8 @@ describe('Pantallas de acceso', () => {
       f.detectChanges();
       expect(texto(f)).toContain('nombre y apellido');
       expect(texto(f)).toContain('correo válido');
-      expect(texto(f)).toContain('Mínimo 8 caracteres');
+      expect(texto(f)).toContain('Al menos 8 caracteres');
+      expect(texto(f)).toContain('Un número');
       expect(navegar).not.toHaveBeenCalled();
     });
   });

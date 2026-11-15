@@ -24,6 +24,15 @@ export interface OpcionesTexto {
   multilinea?: boolean;
 }
 
+export interface OpcionesReprogramacion {
+  titulo: string;
+  mensaje: string;
+  fechaActual?: string;
+  minima: string;
+  conFranja: boolean;
+  validar: (fecha: string) => string | null;
+}
+
 export interface OpcionesInvitacion {
   titulo: string;
   nombre: string;
@@ -52,6 +61,35 @@ const BASE: SweetAlertOptions = {
   reverseButtons: true,
   customClass: CLASES,
 };
+
+/** Muestra solo lo necesario del enlace: el servidor, la ruta y el final del código. El enlace completo se copia aparte. */
+export function acortarEnlace(enlace: string): string {
+  try {
+    const url = new URL(enlace);
+    const partes = url.pathname.split('/').filter(Boolean);
+    const codigo = partes.pop() ?? '';
+    return `${url.host}${partes.length ? `/${partes.join('/')}/` : '/'}…${codigo.slice(-6)}`;
+  } catch {
+    return enlace.length > 34 ? `${enlace.slice(0, 22)}…${enlace.slice(-6)}` : enlace;
+  }
+}
+
+async function copiarAlPortapapeles(texto: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(texto);
+    return true;
+  } catch {
+    const auxiliar = document.createElement('textarea');
+    auxiliar.value = texto;
+    auxiliar.setAttribute('readonly', '');
+    auxiliar.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+    document.body.appendChild(auxiliar);
+    auxiliar.select();
+    const ok = document.execCommand('copy');
+    auxiliar.remove();
+    return ok;
+  }
+}
 
 const cargarSwal = () => import('sweetalert2').then((m) => m.default);
 
@@ -136,12 +174,50 @@ export class AlertService {
     return resultado.isConfirmed ? (resultado.value as { motivoId: string; nota: string }) : null;
   }
 
+  async pedirReprogramacion(o: OpcionesReprogramacion): Promise<{ fecha: string; franja: 'manana' | 'tarde' | null } | null> {
+    const Swal = await cargarSwal();
+    const franja = o.conFranja
+      ? '<label class="form-label mt-3" for="fx-rep-franja">Franja</label>' +
+        '<select id="fx-rep-franja" class="form-select"><option value="manana">A la mañana</option><option value="tarde">A la tarde</option></select>'
+      : '';
+    const resultado = await Swal.fire({
+      ...BASE,
+      icon: 'question',
+      title: o.titulo,
+      html:
+        `<p class="fx-swal-aviso">${escapar(o.mensaje)}</p>` +
+        '<div class="text-start"><label class="form-label" for="fx-rep-fecha">Nueva fecha de retiro</label>' +
+        `<input id="fx-rep-fecha" type="date" class="form-control" min="${escapar(o.minima)}" value="${escapar(o.fechaActual && o.fechaActual >= o.minima ? o.fechaActual : o.minima)}" />` +
+        `${franja}</div>`,
+      showCancelButton: true,
+      confirmButtonText: 'Reprogramar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const fecha = (document.getElementById('fx-rep-fecha') as HTMLInputElement).value;
+        const error = o.validar(fecha);
+        if (error) {
+          Swal.showValidationMessage(error);
+          return false;
+        }
+        const franjaElegida = document.getElementById('fx-rep-franja') as HTMLSelectElement | null;
+        return { fecha, franja: franjaElegida ? (franjaElegida.value as 'manana' | 'tarde') : null };
+      },
+    });
+    return resultado.isConfirmed ? (resultado.value as { fecha: string; franja: 'manana' | 'tarde' | null }) : null;
+  }
+
   async invitacion(o: OpcionesInvitacion): Promise<void> {
     const Swal = await cargarSwal();
     const demo = CONFIG.mostrarCorreosSimulados
-      ? `<div class="fx-cred"><div><small>Enlace (solo demostración)</small><code>${escapar(o.enlace)}</code></div>` +
-        `<button type="button" class="btn btn-sm btn-outline-secondary" data-copiar="enlace"><i class="bi bi-clipboard"></i> Copiar</button></div>` +
-        `<a class="small fw-bold" href="/correos" target="_blank" rel="noopener">Ver el correo en la bandeja de demostración</a>`
+      ? '<div class="fx-enlace">' +
+        '<small class="fx-enlace-rotulo">Enlace de activación · solo demostración</small>' +
+        '<div class="fx-enlace-caja">' +
+        '<i class="bi bi-link-45deg fx-enlace-icono" aria-hidden="true"></i>' +
+        `<span class="fx-enlace-texto" title="${escapar(o.enlace)}">${escapar(acortarEnlace(o.enlace))}</span>` +
+        `<button type="button" class="fx-copiar" data-enlace="${escapar(o.enlace)}" aria-label="Copiar el enlace completo"><i class="bi bi-clipboard" aria-hidden="true"></i><span>Copiar</span></button>` +
+        '</div>' +
+        '<a class="fx-enlace-correo" href="/correos" target="_blank" rel="noopener"><i class="bi bi-envelope-open" aria-hidden="true"></i>Ver el correo en la bandeja de demostración</a>' +
+        '</div>'
       : '';
 
     await Swal.fire({
@@ -149,20 +225,23 @@ export class AlertService {
       icon: 'success',
       title: o.titulo,
       html:
-        `<p class="fx-muted small mb-3"><strong>${escapar(o.nombre)}</strong><br>Enviamos un correo a <strong>${escapar(o.email)}</strong> con el enlace para ${escapar(o.accion)}. Vence en ${escapar(o.vigencia)}.</p>` +
+        `<p class="fx-swal-aviso"><strong>${escapar(o.nombre)}</strong><br>Enviamos un correo a <strong>${escapar(o.email)}</strong> con el enlace para ${escapar(o.accion)}. Vence en ${escapar(o.vigencia)}.</p>` +
         demo,
       confirmButtonText: 'Listo',
       didOpen: (popup) => {
-        popup.querySelectorAll<HTMLButtonElement>('[data-copiar]').forEach((boton) =>
+        popup.querySelectorAll<HTMLButtonElement>('.fx-copiar').forEach((boton) =>
           boton.addEventListener('click', async () => {
-            try {
-              await navigator.clipboard.writeText(o.enlace);
-              const icono = document.createElement('i');
-              icono.className = 'bi bi-check2';
-              boton.replaceChildren(icono, document.createTextNode(' Copiado'));
-            } catch {
-              boton.textContent = 'No se pudo copiar';
-            }
+            const copiado = await copiarAlPortapapeles(boton.dataset['enlace'] ?? o.enlace);
+            const icono = boton.querySelector('i')!;
+            const texto = boton.querySelector('span')!;
+            boton.classList.toggle('copiado', copiado);
+            icono.className = copiado ? 'bi bi-check2-circle' : 'bi bi-exclamation-circle';
+            texto.textContent = copiado ? 'Copiado' : 'No se pudo copiar';
+            setTimeout(() => {
+              boton.classList.remove('copiado');
+              icono.className = 'bi bi-clipboard';
+              texto.textContent = 'Copiar';
+            }, 2200);
           }),
         );
       },

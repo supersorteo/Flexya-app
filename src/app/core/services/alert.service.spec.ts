@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import Swal from 'sweetalert2';
-import { AlertService } from './alert.service';
+import { AlertService, acortarEnlace } from './alert.service';
 
 describe('AlertService', () => {
   let fire: ReturnType<typeof vi.spyOn>;
@@ -54,7 +54,14 @@ describe('AlertService', () => {
     const html = String(opciones()['html']);
     expect(html).not.toContain('<b>Taller</b>');
     expect(html).toContain('&lt;b&gt;Taller&lt;/b&gt;');
-    expect(html).toContain('activar/abc123');
+    expect(html).toContain('data-enlace="http://localhost/activar/abc123"');
+    expect(html).toContain('localhost/activar/…abc123');
     expect(html).toContain('a&lt;x&gt;@b.com');
+  });
+
+  it('acorta el enlace para mostrarlo pero conserva solo lo necesario', () => {
+    expect(acortarEnlace('http://localhost:4200/activar/abcdef0123456789')).toBe('localhost:4200/activar/…456789');
+    expect(acortarEnlace('https://flexya.com/restablecer/Zq81xk')).toBe('flexya.com/restablecer/…Zq81xk');
+    expect(acortarEnlace('no es una url')).toBe('no es una url');
   });
 });

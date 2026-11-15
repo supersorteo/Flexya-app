@@ -233,6 +233,7 @@
   border: 1.5px solid var(--fx-input-border);
 }
 .form-control.is-invalid, .form-select.is-invalid { border-color: var(--fx-danger); }
+.input-group > .form-control.is-invalid { background-image: none; padding-right: 0.75rem; }
 .form-check-input { border: 1.5px solid var(--fx-input-border); }
 
 .form-check-input:checked {

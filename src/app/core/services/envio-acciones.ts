@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Envio, enCustodiaFlexya } from '../models';
+import { Envio, enCustodiaFlexya, hoyISO } from '../models';
 import { AlertService } from './alert.service';
 import { AuthService } from './auth.service';
 import { DataService, StockInsuficienteError } from './data.service';
@@ -24,6 +24,31 @@ export class AccionesEnvio {
     if (recibio === null) return false;
     this.data.entregar(e.id, recibio);
     this.alert.exito(`${e.id} marcado como entregado`);
+    return true;
+  }
+
+  async reprogramar(e: Envio): Promise<boolean> {
+    const usuario = this.auth.user();
+    if (!usuario) return false;
+    const esAdmin = usuario.rol === 'admin';
+    const pedido = await this.alert.pedirReprogramacion({
+      titulo: `Reprogramar el retiro de ${e.id}`,
+      mensaje: esAdmin
+        ? e.mensajeroId
+          ? 'El mensajero asignado deja de tener este retiro: vas a tener que asignarlo de nuevo para el día nuevo.'
+          : 'Elegí cuándo se va a retirar. Todos los destinatarios de este retiro se mueven juntos.'
+        : 'Flexya vuelve a coordinar el retiro para esa fecha. Todos los destinatarios de este retiro se mueven juntos.',
+      fechaActual: e.fechaRetiro ?? undefined,
+      minima: hoyISO(),
+      conFranja: e.retiro !== 'deposito',
+      validar: (fecha) => this.data.validarFechaRetiro(fecha),
+    });
+    if (!pedido) return false;
+    if (!this.data.reprogramarRetiro(e.id, pedido.fecha, pedido.franja, usuario)) {
+      this.alert.advertencia('Este retiro ya no se puede reprogramar.');
+      return false;
+    }
+    this.alert.exito(`Retiro de ${e.id} reprogramado para el ${pedido.fecha.split('-').reverse().slice(0, 2).join('/')}`);
     return true;
   }
 

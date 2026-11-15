@@ -217,6 +217,53 @@ export class DataService {
     );
   }
 
+  /** Mientras nadie retiró el paquete se puede mover la fecha; después ya no es un retiro, es una entrega en curso. */
+  puedeReprogramar(e: Envio): boolean {
+    return ['Pendiente', 'Retiro asignado', 'Retiro fallido'].includes(e.estado);
+  }
+
+  validarFechaRetiro(iso: string): string | null {
+    if (!iso) return 'Elegí una fecha.';
+    if (iso < hoyISO()) return 'La fecha no puede ser anterior a hoy.';
+    if (!esDiaHabilISO(iso, this.configOperacion().feriados)) return 'Ese día no hay retiros (fin de semana o feriado). Elegí un día hábil.';
+    return null;
+  }
+
+  /**
+   * Cambia el día de retiro de todo el retiro (todos sus destinatarios). Si ya tenía mensajero, lo pierde:
+   * el superadmin tiene que asignarlo de nuevo para el día nuevo. El cliente solo puede con lo suyo.
+   */
+  reprogramarRetiro(id: string, fecha: string, franja: Franja | null, quien: Usuario): boolean {
+    const base = this.envios().find((x) => x.id === id);
+    if (!base || !this.puedeReprogramar(base) || this.validarFechaRetiro(fecha)) return false;
+    if (quien.rol === 'cliente' ? base.clienteId !== quien.clienteId : quien.rol !== 'admin') return false;
+    const grupo = new Set(
+      this.envios().filter((x) => x.clienteId === base.clienteId && x.retiroId === base.retiroId && x.retiro === base.retiro && this.puedeReprogramar(x)).map((x) => x.id),
+    );
+    const [, mes, dia] = fecha.split('-');
+    const detalle = `Retiro reprogramado para el ${dia}/${mes} por ${quien.nombre}`;
+    this.mutate(`Reprogramar ${id}`, (d) => ({
+      ...d,
+      envios: d.envios.map((x) =>
+        grupo.has(x.id)
+          ? {
+              ...x,
+              estado: 'Pendiente' as const,
+              mensajeroId: null,
+              eta: 'A coordinar',
+              nota: '',
+              fechaRetiro: fecha,
+              retiroProgramado: true,
+              franja: x.retiro === 'deposito' ? null : (franja ?? x.franja ?? 'manana'),
+              historial: [...(x.historial ?? []), this.hito('Pendiente', detalle)],
+            }
+          : x,
+      ),
+      actividades: [this.actividad('amber', `Retiro de ${id} reprogramado`, `${this.nombreCliente(base.clienteId)}: ${detalle.toLowerCase()}.`), ...d.actividades],
+    }));
+    return true;
+  }
+
   puedeCancelarAdmin(e: Envio): boolean {
     return ['Pendiente', 'Retiro asignado', 'Retiro fallido'].includes(e.estado) || (e.estado === 'En revisión' && !enCustodiaFlexya(e));
   }
