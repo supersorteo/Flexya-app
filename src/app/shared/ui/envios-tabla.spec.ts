@@ -114,6 +114,40 @@ describe('Tabla de envíos', () => {
       expect(tabla().titulos()).toEqual(['Ver detalle', 'Imprimir etiqueta', 'Ver código QR']);
     });
 
+    it('con mensajero asignado no edita pero sí cancela, y avisa que el mensajero pierde el retiro', async () => {
+      const c = await clienteConSesion();
+      const m = data.agregarMensajero({
+        nombre: 'Santiago Pereyra', tipoDocumento: 'DNI', numeroDocumento: '28456123', telefono: '+54 9 11 5555 3000', telefonoEmergencia: '', email: 'santi@flexya.com', zonaId: 'caba-norte',
+      }).mensajero;
+      const e = data.crearEnvio({ ...entrega, retiro: 'domicilio' }, c.id);
+      data.asignar(e.id, m.id);
+      const { f, titulos, botones } = tabla();
+      expect(titulos()).toEqual(['Ver detalle', 'Cancelar envío', 'Imprimir etiqueta', 'Ver código QR']);
+
+      botones()[1].click();
+      await esperar();
+      f.detectChanges();
+      expect(alerta.confirmar).toHaveBeenCalledWith(expect.objectContaining({ mensaje: expect.stringContaining('Santiago Pereyra') }));
+      expect(data.envios().find((x) => x.id === e.id)).toMatchObject({ estado: 'Cancelado', mensajeroId: null });
+    });
+
+    it('con el retiro fallido todavía se puede cancelar, y una vez retirado ya no', async () => {
+      const c = await clienteConSesion();
+      const m = data.agregarMensajero({
+        nombre: 'Santiago Pereyra', tipoDocumento: 'DNI', numeroDocumento: '28456123', telefono: '+54 9 11 5555 3000', telefonoEmergencia: '', email: 'santi@flexya.com', zonaId: 'caba-norte',
+      }).mensajero;
+      const e = data.crearEnvio({ ...entrega, retiro: 'domicilio' }, c.id);
+      data.asignar(e.id, m.id);
+      data.retiroFallido(e.id, m.id, 'No había nadie');
+      expect(tabla().titulos()).toContain('Cancelar envío');
+      const otro = data.crearEnvio({ ...entrega, retiro: 'domicilio' }, c.id);
+      data.asignar(otro.id, m.id);
+      data.retirar(otro.id, m.id);
+      const { el } = tabla();
+      const fila = [...el.querySelectorAll('tbody tr')].find((tr) => tr.textContent!.includes(otro.id))!;
+      expect([...fila.querySelectorAll<HTMLButtonElement>('td:last-child button')].map((b) => b.title)).not.toContain('Cancelar envío');
+    });
+
     it('ver el detalle abre el modal con ese envío', async () => {
       const c = await clienteConSesion();
       const e = data.crearEnvio(entrega, c.id);

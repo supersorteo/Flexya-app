@@ -62,7 +62,9 @@ export class AccionesEnvio {
       titulo: `¿Cancelar el envío ${e.id}?`,
       mensaje: enCustodiaFlexya(e)
         ? 'El paquete ya está en Flexya: te lo devolvemos y vas a confirmar cuando lo recibas. Las unidades vuelven a tu stock recién ahí.'
-        : 'Las unidades vuelven a tu stock. Esta acción no se puede deshacer.',
+        : e.mensajeroId
+          ? `${this.data.nombreMensajero(e.mensajeroId)} ya tenía este retiro asignado y deja de tenerlo. Las unidades vuelven a tu stock. Esta acción no se puede deshacer.`
+          : 'Las unidades vuelven a tu stock. Esta acción no se puede deshacer.',
       confirmar: 'Sí, cancelar envío',
       cancelar: 'No, mantenerlo',
       tipo: 'peligro',
@@ -115,9 +117,10 @@ export class AccionesEnvio {
     if (!clienteId) return false;
     const cancelables = envios.filter((e) => this.data.cancelableCliente(e));
     const enFlexya = cancelables.filter((e) => enCustodiaFlexya(e)).length;
+    const conMensajero = cancelables.filter((e) => !!e.mensajeroId).length;
     const confirmado = await this.alert.confirmar({
       titulo: `¿Cancelar el retiro ${retiroId}?`,
-      mensaje: `Se cancelan ${cancelables.length} envíos que todavía se pueden cancelar. Los que ya salieron o se entregaron no se tocan.${enFlexya ? ` ${enFlexya} ya están en Flexya: se te devuelven.` : ''} Las unidades vuelven a tu stock.`,
+      mensaje: `Se cancelan ${cancelables.length} envíos que todavía no salieron de tu casa. Los que ya fueron retirados o se entregaron no se tocan.${enFlexya ? ` ${enFlexya} ya están en Flexya: se te devuelven.` : ''}${conMensajero ? ` ${conMensajero} tenían mensajero asignado, que deja de tener esos retiros.` : ''} Las unidades vuelven a tu stock.`,
       confirmar: 'Sí, cancelar retiro',
       cancelar: 'No, mantenerlo',
       tipo: 'peligro',

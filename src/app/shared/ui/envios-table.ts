@@ -54,11 +54,12 @@ interface Fila {
                         <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminarBorrador(e)" [attr.aria-label]="'Eliminar borrador ' + e.id" title="Eliminar borrador">
                           <i class="bi bi-trash3"></i><span class="d-none d-xl-inline">Eliminar</span>
                         </button>
-                      } @else {
-                        <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancelar(e)" [attr.aria-label]="'Cancelar ' + e.id" title="Cancelar envío">
-                          <i class="bi bi-x-circle"></i><span class="d-none d-xl-inline">Cancelar</span>
-                        </button>
                       }
+                    }
+                    @if (rol() === 'cliente' && data.cancelableCliente(e)) {
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancelar(e)" [attr.aria-label]="'Cancelar ' + e.id" title="Cancelar envío">
+                        <i class="bi bi-x-circle"></i><span class="d-none d-xl-inline">Cancelar</span>
+                      </button>
                     }
                     @if (rol() === 'admin' && data.puedeRecepcionar(e)) {
                       <button type="button" class="btn btn-sm btn-success" (click)="recepcionar(e)" [attr.aria-label]="'Recepcionar ' + e.id" title="Recepcionar en depósito">

@@ -229,7 +229,8 @@ export class DataService {
       this.cambiarEstado(envio.id, 'En devolución', 'Devolución a coordinar', 'amber', `Envío ${envio.id} se devuelve al cliente`, { mensajeroId: null, nota: texto }, `${texto} El paquete ya está en Flexya: se le devuelve.`);
       return true;
     }
-    this.anular(envio, { nota: texto }, texto);
+    const asignado = envio.mensajeroId ? this.nombreMensajero(envio.mensajeroId) : null;
+    this.anular(envio, { nota: texto, mensajeroId: null }, asignado ? `${texto} Estaba asignado a ${asignado}, que ya no tiene este retiro.` : texto);
     return true;
   }
 
@@ -370,8 +371,9 @@ export class DataService {
     return e.estado === 'Borrador' || e.estado === 'Pendiente' || e.estado === 'En revisión';
   }
 
+  /** El cliente cancela mientras el paquete no salió de su casa: pendiente, con mensajero asignado o con el retiro fallido. Después es una devolución. */
   cancelableCliente(e: Envio): boolean {
-    return e.estado === 'Pendiente' || e.estado === 'En revisión';
+    return e.estado === 'Pendiente' || e.estado === 'Retiro asignado' || e.estado === 'Retiro fallido' || e.estado === 'En revisión';
   }
 
   private delMensajero(id: string, mensajeroId: string, estado: EstadoEnvio): Envio | null {
