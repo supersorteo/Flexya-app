@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CONFIG } from '../../core/config';
+import { rutaSegura } from '../../core/ruta-segura';
 import { AuthService, ResultadoLogin } from '../../core/services/auth.service';
 import { emailValidator } from '../../shared/forms/validators';
 import { AuthCard } from '../../shared/ui/auth-card';
@@ -66,6 +67,7 @@ export class Login {
   protected readonly auth = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly router = inject(Router);
+  private readonly ruta = inject(ActivatedRoute);
 
   protected readonly demo = CONFIG.mostrarCorreosSimulados;
   protected readonly error = signal('');
@@ -91,7 +93,9 @@ export class Login {
     const r = await this.auth.login(email, clave);
     this.cargando.set(false);
     if (r.ok) {
-      void this.router.navigate([this.auth.homeFor(r.usuario.rol)]);
+      const volver = rutaSegura(this.ruta.snapshot.queryParamMap.get('volver'));
+      if (volver) void this.router.navigateByUrl(volver);
+      else void this.router.navigate([this.auth.homeFor(r.usuario.rol)]);
       return;
     }
     this.error.set(mensaje(r));

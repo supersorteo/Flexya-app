@@ -14,7 +14,7 @@ let n = 0;
 const envio = (extra: Partial<Envio> = {}): Envio => ({
   id: `LF-${++n}`, clienteId: 'c1', destinatario: 'Ana', telefono: '', direccion: '', localidad: '', zonaId: 'z1', estado: 'Entregado', eta: '',
   importe: 1000, mensajeroId: 'm1', creadoEn: iso(10), retiro: 'deposito', origen: '', items: [], historial: [], fechaRetiro: null, retiroId: `R-${n}`,
-  retiroProgramado: false, franja: null, intentos: 0, ...extra,
+  retiroProgramado: false, franja: null, intentos: 0, codigo: `COD${n}`.padEnd(8, 'X'), ...extra,
 });
 const comision = (extra: Partial<Comision> = {}): Comision => ({
   id: `k${++n}`, mensajeroId: 'm1', envioId: 'LF-1', retiroId: 'R-1', concepto: 'ENTREGA', base: 1000, porcentaje: 60, monto: 600, fecha: iso(14), liquidacionId: null, ...extra,

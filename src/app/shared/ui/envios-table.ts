@@ -1,4 +1,6 @@
-import { etiquetaArrastre } from '../../core/periodos';
+import { estaAbierto, etiquetaArrastre } from '../../core/periodos';
+import { EtiquetasModal } from '../../features/envios/etiquetas-modal';
+import { QrModal } from '../../features/envios/qr-modal';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -125,6 +127,16 @@ interface Fila {
                         <i class="bi bi-exclamation-triangle"></i><span class="d-none d-xl-inline">Incidencia</span>
                       </button>
                     }
+                    @if (rol() !== 'mensajero' && abierto(e)) {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="etiqueta(e)" [attr.aria-label]="'Imprimir la etiqueta de ' + e.id" title="Imprimir etiqueta">
+                        <i class="bi bi-qr-code"></i><span class="d-none d-xl-inline">Etiqueta</span>
+                      </button>
+                    }
+                    @if (rol() === 'cliente' && abierto(e)) {
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="verQr(e)" [attr.aria-label]="'Ver el código QR de ' + e.id" title="Ver código QR">
+                        <i class="bi bi-qr-code-scan"></i><span class="d-none d-xl-inline">Ver QR</span>
+                      </button>
+                    }
     </ng-template>
 
     @if (envios().length) {
@@ -139,6 +151,11 @@ interface Fila {
                   <span>{{ g.envios.length }} destinatarios</span>
                 </button>
                 <span class="fx-muted fx-card-grupo-progreso">{{ progreso(g.envios) }}</span>
+                @if (rol() !== 'mensajero' && conEtiquetas(g.envios) > 0) {
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="etiquetasDelRetiro(g.retiroId, g.envios)" [attr.aria-label]="'Imprimir las etiquetas del retiro ' + g.retiroId" title="Imprimir etiquetas del retiro">
+                    <i class="bi bi-qr-code"></i>Imprimir etiquetas
+                  </button>
+                }
                 @if (rol() === 'cliente' && cancelables(g.envios) > 0) {
                   <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancelarRetiro(g.retiroId, g.envios)" [attr.aria-label]="'Cancelar el retiro ' + g.retiroId" title="Cancelar el retiro completo">
                     <i class="bi bi-x-circle"></i>Cancelar retiro
@@ -209,6 +226,11 @@ interface Fila {
                           <span>{{ g.envios.length }} destinatarios</span>
                           <span class="fx-muted">· {{ progreso(g.envios) }}</span>
                         </button>
+                        @if (rol() !== 'mensajero' && conEtiquetas(g.envios) > 0) {
+                          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="etiquetasDelRetiro(g.retiroId, g.envios)" [attr.aria-label]="'Imprimir las etiquetas del retiro ' + g.retiroId" title="Imprimir etiquetas del retiro">
+                            <i class="bi bi-qr-code"></i><span class="d-none d-xl-inline">Etiquetas</span>
+                          </button>
+                        }
                         @if (rol() === 'cliente' && cancelables(g.envios) > 0) {
                           <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancelarRetiro(g.retiroId, g.envios)" [attr.aria-label]="'Cancelar el retiro ' + g.retiroId" title="Cancelar el retiro completo">
                             <i class="bi bi-x-circle"></i><span class="d-none d-xl-inline">Cancelar retiro</span>
@@ -345,6 +367,43 @@ export class EnviosTable {
   protected mensajerosPara(e: Envio) {
     const todos = this.data.mensajeros();
     return [...todos.filter((m) => m.zonaId === e.zonaId), ...todos.filter((m) => m.zonaId !== e.zonaId)];
+  }
+
+  protected abierto(e: Envio): boolean {
+    return estaAbierto(e);
+  }
+
+  protected verQr(e: Envio) {
+    const ref = this.modals.open(QrModal, { centered: true, scrollable: true, size: 'md', modalDialogClass: 'fx-modal', backdropClass: 'fx-backdrop' });
+    ref.componentInstance.envio = e;
+    ref.result.then(
+      () => undefined,
+      () => undefined,
+    );
+  }
+
+  protected etiqueta(e: Envio) {
+    this.abrirEtiquetas([e], 'Etiqueta del envío ' + e.id);
+  }
+
+  protected etiquetasDelRetiro(retiroId: string, envios: Envio[]) {
+    const abiertos = envios.filter((e) => estaAbierto(e));
+    this.abrirEtiquetas(abiertos, `Retiro ${retiroId}: ${abiertos.length} etiquetas`);
+  }
+
+  protected conEtiquetas(envios: Envio[]): number {
+    return envios.filter((e) => estaAbierto(e)).length;
+  }
+
+  private abrirEtiquetas(envios: Envio[], titulo: string) {
+    if (!envios.length) return;
+    const ref = this.modals.open(EtiquetasModal, { centered: true, scrollable: true, size: 'lg', modalDialogClass: 'fx-modal', backdropClass: 'fx-backdrop' });
+    ref.componentInstance.envios = envios;
+    ref.componentInstance.titulo = titulo;
+    ref.result.then(
+      () => undefined,
+      () => undefined,
+    );
   }
 
   protected ver(e: Envio) {

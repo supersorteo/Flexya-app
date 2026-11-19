@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { ClienteInput, NuevoEnvio, NuevoPedidoRetiro } from '../../core/models';
+import { ClienteInput, Envio, NuevoEnvio, NuevoPedidoRetiro } from '../../core/models';
 import { AlertService } from '../../core/services/alert.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
@@ -16,7 +16,7 @@ const cliente: ClienteInput = {
 };
 
 describe('Alta de envíos del cliente', () => {
-  let alerta: { exito: ReturnType<typeof vi.fn>; advertencia: ReturnType<typeof vi.fn>; confirmar: ReturnType<typeof vi.fn> };
+  let alerta: { exito: ReturnType<typeof vi.fn>; exitoConAccion: ReturnType<typeof vi.fn>; advertencia: ReturnType<typeof vi.fn>; confirmar: ReturnType<typeof vi.fn> };
   let abrirModal: ReturnType<typeof vi.fn>;
   let navegar: ReturnType<typeof vi.fn>;
   let data: DataService;
@@ -26,7 +26,7 @@ describe('Alta de envíos del cliente', () => {
     localStorage.clear();
     sessionStorage.clear();
     for (const m of ['groupCollapsed', 'groupEnd', 'log', 'table'] as const) vi.spyOn(console, m).mockImplementation(() => undefined);
-    alerta = { exito: vi.fn(), advertencia: vi.fn(), confirmar: vi.fn().mockResolvedValue(true) };
+    alerta = { exito: vi.fn(), exitoConAccion: vi.fn().mockResolvedValue(false), advertencia: vi.fn(), confirmar: vi.fn().mockResolvedValue(true) };
     TestBed.configureTestingModule({ providers: [provideRouter([]), { provide: AlertService, useValue: alerta }] });
     abrirModal = vi.spyOn(TestBed.inject(NgbModal), 'open') as unknown as ReturnType<typeof vi.fn>;
     navegar = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as unknown as ReturnType<typeof vi.fn>;
@@ -61,7 +61,7 @@ describe('Alta de envíos del cliente', () => {
       clienteId: c.id, estado: 'Pendiente', retiro: 'domicilio', origen: 'Av. Mitre 100, Avellaneda',
       items: [expect.objectContaining({ productoId: taza.id, nombre: 'Taza', cantidad: 3 })],
     });
-    expect(alerta.exito).toHaveBeenCalledWith(expect.stringMatching(/^Envío LF-\d+ creado correctamente$/));
+    expect(alerta.exitoConAccion).toHaveBeenCalledWith(expect.objectContaining({ titulo: expect.stringMatching(/^Envío LF-\d+ creado correctamente$/), accion: 'Imprimir etiqueta' }));
     expect(navegar).toHaveBeenCalledWith(['/cliente/envios']);
   });
 
@@ -85,7 +85,7 @@ describe('Alta de envíos del cliente', () => {
     expect(a.retiroId).toBe(b.retiroId);
     expect(a.items).toEqual([expect.objectContaining({ productoId: taza.id, cantidad: 2 })]);
     expect(b.items).toEqual([expect.objectContaining({ productoId: remera.id, cantidad: 5 })]);
-    expect(alerta.exito).toHaveBeenCalledWith(expect.stringMatching(/^Retiro R-\d+ listo: 2 envíos$/));
+    expect(alerta.exitoConAccion).toHaveBeenCalledWith(expect.objectContaining({ titulo: expect.stringMatching(/^Retiro R-\d+ listo: 2 envíos$/), accion: 'Imprimir etiquetas' }));
     expect(navegar).toHaveBeenCalledTimes(1);
   });
 
@@ -102,6 +102,45 @@ describe('Alta de envíos del cliente', () => {
     expect(data.productos()[0].stock).toBe(5);
     expect(alerta.advertencia).toHaveBeenCalledWith(expect.stringContaining('hay 5 en stock'));
     expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('al crear el envío se ofrece imprimir las etiquetas y, si la persona acepta, se muestran una por paquete', async () => {
+    const c = await clienteConSesion();
+    const taza = data.agregarProducto(c.id, { stock: 100, nombre: 'Taza', descripcion: '', precio: null, peso: null, alto: null, ancho: null, largo: null });
+    const etiquetas: { envios?: Envio[]; titulo?: string } = {};
+    alerta.exitoConAccion.mockResolvedValue(true);
+    abrirModal
+      .mockReturnValueOnce({ componentInstance: {}, result: Promise.resolve({ retiro: 'domicilio', destinos: [destino(taza.id), destino(taza.id, 'Bruno Díaz')] }) })
+      .mockReturnValueOnce({ componentInstance: etiquetas, result: Promise.resolve(undefined) });
+    TestBed.inject(CrearEnvio).abrir();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(abrirModal).toHaveBeenCalledTimes(2);
+    expect(etiquetas.envios).toHaveLength(2);
+    expect(etiquetas.envios!.map((e) => e.destinatario).sort()).toEqual(['Ana Gómez', 'Bruno Díaz']);
+    expect(etiquetas.titulo).toContain('2 etiquetas');
+  });
+
+  it('si la persona no quiere imprimir ahora, no se abre nada: la etiqueta sigue disponible desde su lista', async () => {
+    const c = await clienteConSesion();
+    const taza = data.agregarProducto(c.id, { stock: 100, nombre: 'Taza', descripcion: '', precio: null, peso: null, alto: null, ancho: null, largo: null });
+    alerta.exitoConAccion.mockResolvedValue(false);
+    abrirModal.mockReturnValue({ componentInstance: {}, result: Promise.resolve({ retiro: 'domicilio', destinos: [destino(taza.id)] }) });
+    TestBed.inject(CrearEnvio).abrir();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(alerta.exitoConAccion).toHaveBeenCalledTimes(1);
+    expect(abrirModal).toHaveBeenCalledTimes(1);
+    expect(data.envios()).toHaveLength(1);
+  });
+
+  it('un borrador no ofrece etiquetas: todavía no se pidió el servicio', async () => {
+    const c = await clienteConSesion();
+    const taza = data.agregarProducto(c.id, { stock: 100, nombre: 'Taza', descripcion: '', precio: null, peso: null, alto: null, ancho: null, largo: null });
+    abrirModal.mockReturnValue({ componentInstance: {}, result: Promise.resolve({ retiro: 'domicilio', borrador: true, destinos: [destino(taza.id)] }) });
+    TestBed.inject(CrearEnvio).abrir();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(abrirModal).toHaveBeenCalledTimes(1);
+    expect(alerta.exitoConAccion).not.toHaveBeenCalled();
+    expect(alerta.exito).toHaveBeenCalledWith(expect.stringContaining('Borrador'));
   });
 
   it('si se cierra el asistente sin guardar no se crea nada', async () => {

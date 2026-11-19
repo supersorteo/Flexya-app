@@ -13,6 +13,13 @@ export interface OpcionesConfirmacion {
   tipo?: TipoConfirmacion;
 }
 
+export interface OpcionesExitoConAccion {
+  titulo: string;
+  mensaje?: string;
+  accion: string;
+  cancelar?: string;
+}
+
 export interface OpcionesTexto {
   titulo: string;
   mensaje?: string;
@@ -128,6 +135,21 @@ export class AlertService {
       cancelButtonText: o.cancelar ?? 'Cancelar',
       focusCancel: tipo === 'peligro',
       customClass: { ...CLASES, popup: `fx-swal fx-swal--${tipo}`, confirmButton: tipo === 'peligro' ? 'btn btn-danger' : 'btn btn-primary' },
+    });
+    return resultado.isConfirmed;
+  }
+
+  /** Avisa que algo salió bien y ofrece una acción para seguir (por ejemplo, imprimir la etiqueta); quien no la quiere toca "Listo". */
+  async exitoConAccion(o: OpcionesExitoConAccion): Promise<boolean> {
+    const Swal = await cargarSwal();
+    const resultado = await Swal.fire({
+      ...BASE,
+      icon: 'success',
+      title: o.titulo,
+      text: o.mensaje,
+      showCancelButton: true,
+      confirmButtonText: o.accion,
+      cancelButtonText: o.cancelar ?? 'Listo',
     });
     return resultado.isConfirmed;
   }

@@ -22,7 +22,10 @@ export class AccionesEnvio {
       icono: 'question',
     });
     if (recibio === null) return false;
-    this.data.entregar(e.id, recibio);
+    if (!this.data.entregar(e.id, recibio, this.auth.user())) {
+      this.alert.advertencia('Este envío no está en reparto o no es tuyo.');
+      return false;
+    }
     this.alert.exito(`${e.id} marcado como entregado`);
     return true;
   }
@@ -348,8 +351,8 @@ export class AccionesEnvio {
   async incidencia(e: Envio): Promise<boolean> {
     const r = await this.alert.pedirIncidencia(`Incidencia en ${e.id}`);
     if (!r) return false;
-    if (!this.data.reportarIncidencia(e.id, r.nota, r.motivoId)) {
-      this.alert.advertencia('Este envío no está en reparto.');
+    if (!this.data.reportarIncidencia(e.id, r.nota, r.motivoId, this.auth.user())) {
+      this.alert.advertencia('Este envío no está en reparto o no es tuyo.');
       return false;
     }
     this.alert.advertencia(`Incidencia registrada en ${e.id}. Llevá el paquete al depósito.`);

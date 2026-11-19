@@ -1,0 +1,59 @@
+/*
+ * Etiqueta de envío (QR). Todas las medidas son proporcionales al ancho de la etiqueta (cqw), así la vista previa en pantalla y
+ * la impresión se ven igual en 10 × 15 cm que en la hoja A4. Es blanco y negro a propósito, para impresoras térmicas.
+ */
+.fx-etiquetas { display: grid; gap: 18px; justify-items: stretch; padding: 8px 0 4px; }
+.fx-etiquetas--a4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+
+.fx-formatos { grid-template-columns: 1fr 1fr; margin-bottom: 12px; }
+@media (max-width: 575px) { .fx-formatos { grid-template-columns: 1fr; } }
+
+.fx-etiqueta {
+  container-type: inline-size;
+  position: relative; display: flex; flex-direction: column; justify-self: center; width: min(100%, 380px); aspect-ratio: 100 / 150; padding: 5cqw; gap: 2.6cqw;
+  background: #fff; color: #000; border: 2px dashed #6b7a90; border-radius: 6px; box-shadow: 0 6px 18px rgba(12, 26, 48, 0.18);
+  font-family: Arial, Helvetica, sans-serif; line-height: 1.25; overflow: hidden;
+  span, strong { display: block; }
+}
+.fx-etq-cab { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 2cqw; border-bottom: 0.7cqw solid #000; }
+.fx-etq-marca { font-size: 6.5cqw; font-weight: 800; letter-spacing: -0.02em; }
+.fx-etq-pos { font-size: 3.6cqw; font-weight: 700; }
+.fx-etq-qr { display: grid; place-items: center; svg { width: 56cqw; height: 56cqw; display: block; } }
+fx-qr { display: block; }
+.fx-etq-codigos { display: grid; justify-items: center; gap: 0.6cqw; text-align: center; }
+.fx-etq-numero { font-size: 8.2cqw; font-weight: 800; letter-spacing: 0.01em; }
+.fx-etq-codigo { font-family: 'Courier New', ui-monospace, monospace; font-size: 5.2cqw; font-weight: 700; letter-spacing: 0.18em; }
+.fx-etq-bloque { display: grid; gap: 0.4cqw; padding-top: 2cqw; border-top: 0.4cqw solid #000; font-size: 4cqw; }
+.fx-etq-rotulo { font-size: 3.2cqw; font-weight: 700; }
+.fx-etq-destinatario { font-size: 5.4cqw; }
+.fx-etq-pie { display: flex; justify-content: space-between; margin-top: auto; padding-top: 1.8cqw; border-top: 0.4cqw dashed #000; font-size: 3.4cqw; }
+
+/* Impresión: solo se imprime el contenido del modal de etiquetas, sin la app ni los controles */
+@media print {
+  html.fx-imprimiendo, html.fx-imprimiendo body { background: #fff !important; overflow: visible !important; height: auto !important; }
+  html.fx-imprimiendo body > *:not(ngb-modal-window) { display: none !important; }
+  html.fx-imprimiendo ngb-modal-window { position: static !important; display: block !important; overflow: visible !important; background: none !important; padding: 0 !important; }
+  html.fx-imprimiendo .modal-dialog { position: static !important; margin: 0 !important; max-width: none !important; width: auto !important; height: auto !important; max-height: none !important; transform: none !important; display: block !important; min-height: 0 !important; }
+  html.fx-imprimiendo .component-host-scrollable { display: block !important; overflow: visible !important; height: auto !important; max-height: none !important; }
+  html.fx-imprimiendo .modal-content { border: 0 !important; box-shadow: none !important; background: none !important; max-height: none !important; overflow: visible !important; border-radius: 0 !important; }
+  html.fx-imprimiendo .modal-content::before { display: none !important; }
+  html.fx-imprimiendo .modal-body { overflow: visible !important; padding: 0 !important; min-height: 0 !important; }
+  html.fx-imprimiendo .fx-no-imprimir { display: none !important; }
+
+  html.fx-imprimiendo .fx-etiquetas { display: block !important; padding: 0 !important; }
+  html.fx-imprimiendo .fx-etiqueta { width: 100mm !important; max-width: none !important; height: 150mm !important; aspect-ratio: auto; margin: 0; border: 0.3mm solid #000; border-radius: 0; box-shadow: none; break-inside: avoid; page-break-after: always; }
+  html.fx-imprimiendo .fx-etiqueta:last-child { page-break-after: auto; }
+
+  html.fx-imprimiendo .fx-etiquetas--a4 { display: grid !important; grid-template-columns: 94mm 94mm; gap: 3mm; justify-content: center; }
+  html.fx-imprimiendo .fx-etiquetas--a4 .fx-etiqueta { width: 94mm !important; height: 141mm !important; page-break-after: auto; }
+  html.fx-imprimiendo .fx-etiquetas--a4 .fx-etiqueta:nth-child(4n) { page-break-after: always; }
+}
+
+/* QR grande para mostrar en la pantalla del celular */
+.fx-qr-grande {
+  display: grid; justify-items: center; gap: 8px; padding: 18px 14px; margin-bottom: 14px; text-align: center;
+  border: 3px solid var(--fx-border-strong); border-radius: var(--fx-r-lg); background: #fff; color: #000;
+  fx-qr svg { width: min(78vw, 300px); height: min(78vw, 300px); display: block; }
+}
+.fx-qr-numero { font-size: 22px; letter-spacing: 0.01em; }
+.fx-qr-codigo { font-family: 'Courier New', ui-monospace, monospace; font-size: 20px; font-weight: 700; letter-spacing: 0.18em; }

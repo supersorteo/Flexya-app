@@ -42,6 +42,16 @@ describe('AlertService', () => {
     });
   });
 
+  it('exitoConAccion avisa que salió bien y devuelve true solo si la persona elige la acción', async () => {
+    expect(await alert.exitoConAccion({ titulo: 'Envío creado', mensaje: 'Pegá la etiqueta', accion: 'Imprimir etiqueta' })).toBe(true);
+    expect(opciones()).toMatchObject({
+      icon: 'success', title: 'Envío creado', text: 'Pegá la etiqueta', showCancelButton: true, confirmButtonText: 'Imprimir etiqueta', cancelButtonText: 'Listo',
+    });
+    fire.mockResolvedValueOnce({ isConfirmed: false, isDenied: false, isDismissed: true });
+    expect(await alert.exitoConAccion({ titulo: 'Envío creado', accion: 'Imprimir etiqueta', cancelar: 'Ahora no' })).toBe(false);
+    expect(opciones()).toMatchObject({ cancelButtonText: 'Ahora no' });
+  });
+
   it('pedirTexto devuelve el texto o null si se cancela', async () => {
     fire.mockResolvedValueOnce({ isConfirmed: true, isDenied: false, isDismissed: false, value: '  Nadie atendió ' });
     expect(await alert.pedirTexto({ titulo: 'Incidencia' })).toBe('Nadie atendió');

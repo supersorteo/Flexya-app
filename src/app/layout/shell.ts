@@ -39,6 +39,7 @@ const NAV: Record<Rol, NavItem[]> = {
   mensajero: [
     { path: 'inicio', label: 'Mi jornada', icon: 'grid-1x2' },
     { path: 'envios', label: 'Mis envíos', icon: 'truck' },
+    { path: 'escanear', label: 'Escanear', icon: 'qr-code-scan' },
     { path: 'ganancias', label: 'Ganancias', icon: 'cash-coin' },
     { path: 'historial', label: 'Historial', icon: 'clock-history' },
   ],
@@ -90,6 +91,9 @@ const ROL_LABEL: Record<Rol, string> = {
               <strong>{{ user()?.nombre }}</strong>
               <small class="fx-muted d-block">{{ rolLabel() }}</small>
             </div>
+            @if (rol() === 'admin') {
+              <a class="btn btn-outline-secondary btn-sm fx-escanear" routerLink="/admin/escanear" aria-label="Escanear una etiqueta" title="Escanear una etiqueta"><i class="bi bi-qr-code-scan" aria-hidden="true"></i></a>
+            }
             <button type="button" class="btn btn-outline-secondary btn-sm fx-tema" (click)="tema.alternar()" [attr.aria-label]="'Tema: ' + etiquetaTema() + '. Tocá para cambiarlo.'" [title]="'Tema: ' + etiquetaTema()">
               <i [class]="'bi bi-' + iconoTema()" aria-hidden="true"></i>
             </button>

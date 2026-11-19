@@ -1,4 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { generarCodigo, interpretarEscaneo } from '../codigo-envio';
 import {
   Actividad, Cliente, ClienteInput, CorreoSimulado, DB, Envio, EstadoCuenta, HitoEnvio, Franja, Comision, ConfigPagos, ConceptoComision, EstadoComision, Liquidacion, AjusteLiquidacion, CONFIG_PAGOS_DEFECTO, fechaLocal, hoyISO, ConfigOperacion, OPERACION_DEFECTO, esDiaHabilISO, proximaFechaHabil, Mensajero, MensajeroInput, EstadoEnvio, NuevoEnvio, NuevoLote,
   ItemEnvio, MovimientoStock, enCursoMensajero, enCustodiaFlexya, MAX_INTENTOS, MOTIVOS_INCIDENCIA, TipoMovimiento, NuevoPedidoRetiro, NuevoRetiro, Producto, ProductoInput, direccionCompleta, TipoToken, TokenUsuario, Usuario, zonaDe, zonaPorId,
@@ -69,6 +70,30 @@ export class DataService {
     return this.mensajeros().find((m) => m.id === id)?.nombre ?? '—';
   }
 
+  private codigoNuevo(): string {
+    return generarCodigo(new Set(this.envios().map((e) => e.codigo)));
+  }
+
+  /** Busca el envío que corresponde a lo escaneado (código del QR o número LF-…), solo entre los que esa persona puede ver. */
+  envioEscaneado(user: Usuario | null, texto: string): Envio | null {
+    const lectura = interpretarEscaneo(texto);
+    if (!lectura) return null;
+    return this.enviosDe(user).find((e) => (lectura.tipo === 'codigo' ? e.codigo === lectura.valor : e.id === lectura.valor)) ?? null;
+  }
+
+  /** Deja constancia de quién escaneó el envío y con qué resultado (también cuando no le correspondía). */
+  registrarEscaneo(texto: string, quien: Usuario, resultado: 'ok' | 'rechazado', accion: string) {
+    const lectura = interpretarEscaneo(texto);
+    if (!lectura) return;
+    const envio = this.envios().find((e) => (lectura.tipo === 'codigo' ? e.codigo === lectura.valor : e.id === lectura.valor));
+    if (!envio) return;
+    const registro = { fecha: new Date().toISOString(), usuarioId: quien.id, rol: quien.rol, resultado, accion };
+    this.mutate(`Escaneo de ${envio.id}`, (d) => ({
+      ...d,
+      envios: d.envios.map((e) => (e.id === envio.id ? { ...e, escaneos: [...(e.escaneos ?? []), registro].slice(-50) } : e)),
+    }));
+  }
+
   crearEnvio(input: NuevoEnvio, clienteId: string): Envio {
     const borrador = input.borrador === true;
     const hermanos = input.retiroId ? this.envios().filter((e) => e.clienteId === clienteId && e.retiroId === input.retiroId) : [];
@@ -82,6 +107,7 @@ export class DataService {
     const envio: Envio = {
       ...campos,
       id: `LF-${this.nextNumber(this.envios().map((e) => e.id), 10000)}`,
+      codigo: this.codigoNuevo(),
       clienteId,
       estado,
       eta: borrador ? 'Sin solicitar' : 'A coordinar',
@@ -510,7 +536,12 @@ export class DataService {
     return true;
   }
 
-  entregar(id: string, recibidoPor = '') {
+  /** Solo se entrega lo que está en reparto y, si lo hace un mensajero, solo lo que es suyo. */
+  entregar(id: string, recibidoPor = '', quien?: Usuario | null): boolean {
+    const previo = this.envios().find((e) => e.id === id);
+    if (!previo || previo.estado !== 'En reparto') return false;
+    if (quien && quien.rol === 'cliente') return false;
+    if (quien?.rol === 'mensajero' && previo.mensajeroId !== quien.mensajeroId) return false;
     this.cambiarEstado(
       id, 'Entregado', 'Hoy · ahora', 'teal', `Envío ${id} entregado`,
       { entregadoEn: new Date().toISOString(), ...(recibidoPor ? { recibidoPor } : {}) },
@@ -518,11 +549,14 @@ export class DataService {
     );
     const envio = this.envios().find((e) => e.id === id);
     if (envio && !this.comisiones().some((c) => c.envioId === id && c.concepto === 'ENTREGA')) this.comisionarSobreTarifa(envio, 'ENTREGA');
+    return true;
   }
 
-  reportarIncidencia(id: string, motivo = '', motivoId = 'otro'): boolean {
+  reportarIncidencia(id: string, motivo = '', motivoId = 'otro', quien?: Usuario | null): boolean {
     const envio = this.envios().find((e) => e.id === id);
     if (!envio || envio.estado !== 'En reparto') return false;
+    if (quien && quien.rol === 'cliente') return false;
+    if (quien?.rol === 'mensajero' && envio.mensajeroId !== quien.mensajeroId) return false;
     const etiqueta = MOTIVOS_INCIDENCIA.find((m) => m.id === motivoId)?.etiqueta ?? 'Otro motivo';
     const texto = motivo ? `${etiqueta}: ${motivo}` : etiqueta;
     const intento = (envio.intentos ?? 0) + 1;

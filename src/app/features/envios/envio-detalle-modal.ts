@@ -1,6 +1,10 @@
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { estaAbierto } from '../../core/periodos';
+import { AuthService } from '../../core/services/auth.service';
+import { EtiquetasModal } from './etiquetas-modal';
+import { QrModal } from './qr-modal';
 import { Envio, EstadoEnvio, MAX_INTENTOS, resumenItems } from '../../core/models';
 import { DataService } from '../../core/services/data.service';
 import { StatusPill } from '../../shared/ui/ui';
@@ -151,6 +155,12 @@ const PASOS: { estado: EstadoEnvio; etiqueta: string; icono: string }[] = [
     </div>
 
     <div class="modal-footer fx-modal-foot">
+      @if (puedeImprimir() && esCliente()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="verQr()"><i class="bi bi-qr-code-scan" aria-hidden="true"></i>Ver QR</button>
+      }
+      @if (puedeImprimir()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="imprimirEtiqueta()"><i class="bi bi-qr-code" aria-hidden="true"></i>Imprimir etiqueta</button>
+      }
       <button type="button" class="btn btn-primary" (click)="modal.close()">Cerrar</button>
     </div>
   `,
@@ -158,8 +168,37 @@ const PASOS: { estado: EstadoEnvio; etiqueta: string; icono: string }[] = [
 export class EnvioDetalleModal {
   protected readonly modal = inject(NgbActiveModal);
   protected readonly data = inject(DataService);
+  private readonly modals = inject(NgbModal);
+  private readonly auth = inject(AuthService);
 
   envio!: Envio;
+
+  /** La etiqueta sirve mientras el paquete sigue su camino; un borrador o un envío cancelado no la necesitan. */
+  protected puedeImprimir(): boolean {
+    return estaAbierto(this.envio);
+  }
+
+  protected esCliente(): boolean {
+    return this.auth.user()?.rol === 'cliente';
+  }
+
+  protected verQr() {
+    const envio = this.envio;
+    this.modal.dismiss();
+    const ref = this.modals.open(QrModal, { centered: true, scrollable: true, size: 'md', modalDialogClass: 'fx-modal', backdropClass: 'fx-backdrop' });
+    ref.componentInstance.envio = envio;
+    ref.result.then(() => undefined, () => undefined);
+  }
+
+  protected imprimirEtiqueta() {
+    const envio = this.envio;
+    this.modal.dismiss();
+    const ref = this.modals.open(EtiquetasModal, { centered: true, scrollable: true, size: 'lg', modalDialogClass: 'fx-modal', backdropClass: 'fx-backdrop' });
+    ref.componentInstance.envios = [envio];
+    ref.componentInstance.titulo = 'Etiqueta del envío ' + envio.id;
+    ref.result.then(() => undefined, () => undefined);
+  }
+
   protected get pasos() {
     return this.envio.retiro === 'domicilio' ? PASOS_DIRECTO : this.envio.retiro === 'recoleccion' ? PASOS_RECOLECCION : PASOS;
   }

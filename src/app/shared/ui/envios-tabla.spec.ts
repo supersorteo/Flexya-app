@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { ClienteInput, MensajeroInput } from '../../core/models';
+import { ClienteInput, Envio, MensajeroInput } from '../../core/models';
 import { AlertService } from '../../core/services/alert.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
@@ -104,14 +104,14 @@ describe('Tabla de envíos', () => {
     it('mientras el envío está pendiente puede ver el detalle, editarlo y cancelarlo', async () => {
       const c = await clienteConSesion();
       data.crearEnvio(entrega, c.id);
-      expect(tabla().titulos()).toEqual(['Ver detalle', 'Editar envío', 'Cancelar envío']);
+      expect(tabla().titulos()).toEqual(['Ver detalle', 'Editar envío', 'Cancelar envío', 'Imprimir etiqueta', 'Ver código QR']);
     });
 
     it('cuando ya llegó a Flexya solo puede ver el detalle', async () => {
       const c = await clienteConSesion();
       const e = data.crearEnvio(entrega, c.id);
       data.recepcionar(e.id);
-      expect(tabla().titulos()).toEqual(['Ver detalle']);
+      expect(tabla().titulos()).toEqual(['Ver detalle', 'Imprimir etiqueta', 'Ver código QR']);
     });
 
     it('ver el detalle abre el modal con ese envío', async () => {
@@ -294,7 +294,7 @@ describe('Tabla de envíos', () => {
       const c = data.agregarCliente(cliente).cliente;
       data.crearEnvio(entrega, c.id);
       const { titulos, botones, f } = tabla();
-      expect(titulos()).toEqual(['Ver detalle', 'Recepcionar en depósito', 'Reportar diferencia', 'Cancelar envío', 'Eliminar envío']);
+      expect(titulos()).toEqual(['Ver detalle', 'Recepcionar en depósito', 'Reportar diferencia', 'Cancelar envío', 'Eliminar envío', 'Imprimir etiqueta']);
 
       alerta.pedirTexto.mockResolvedValueOnce(null);
       botones()[1].click();
@@ -332,7 +332,7 @@ describe('Tabla de envíos', () => {
       const e = data.crearEnvio({ ...entrega, retiro: 'domicilio' }, c.id);
       const { mensajero: m } = data.agregarMensajero(mensajero);
       const { titulos, botones, f } = tabla();
-      expect(titulos()).toEqual(['Ver detalle', 'Asignar al mensajero', 'Cancelar envío', 'Eliminar envío']);
+      expect(titulos()).toEqual(['Ver detalle', 'Asignar al mensajero', 'Cancelar envío', 'Eliminar envío', 'Imprimir etiqueta']);
       expect(data.recepcionar(e.id)).toBe(false);
 
       botones(0).find((b) => b.title === 'Asignar al mensajero')!.click();
@@ -381,7 +381,7 @@ describe('Tabla de envíos', () => {
       await esperar();
       f.detectChanges();
       expect(data.envios()[0]).toMatchObject({ id: e.id, estado: 'En revisión', nota: 'Llegaron 2 tazas en lugar de 3', eta: 'En pausa' });
-      expect(tabla().titulos()).toEqual(['Ver detalle', 'Reanudar envío', 'Devolver al cliente']);
+      expect(tabla().titulos()).toEqual(['Ver detalle', 'Reanudar envío', 'Devolver al cliente', 'Imprimir etiqueta']);
     });
 
     it('un envío en revisión no se asigna hasta reanudarlo, y reanudar lo deja listo en depósito', () => {
@@ -496,7 +496,7 @@ describe('Tabla de envíos', () => {
 
       vi.setSystemTime(new Date(2030, 0, 16, 9, 0));
       const { botones, titulos } = tabla();
-      expect(titulos()).toEqual(['Ver detalle', 'Reprogramar retiro', 'Editar envío', 'Cancelar envío']);
+      expect(titulos()).toEqual(['Ver detalle', 'Reprogramar retiro', 'Editar envío', 'Cancelar envío', 'Imprimir etiqueta', 'Ver código QR']);
       expect(tabla().el.textContent).toContain('Viene de ayer');
 
       (alerta as Record<string, unknown>)['pedirReprogramacion'] = vi.fn().mockResolvedValue({ fecha: '2030-01-17', franja: 'tarde' });
@@ -531,7 +531,7 @@ describe('Tabla de envíos', () => {
       data.crearEnvio(entrega, c.id);
       const { el } = tabla();
       const botones = [...el.querySelectorAll<HTMLButtonElement>('.fx-card-acciones button')];
-      expect(botones.map((b) => b.title)).toEqual(['Ver detalle', 'Editar envío', 'Cancelar envío']);
+      expect(botones.map((b) => b.title)).toEqual(['Ver detalle', 'Editar envío', 'Cancelar envío', 'Imprimir etiqueta', 'Ver código QR']);
     });
 
     it('un retiro con varios destinatarios muestra su encabezado y una tarjeta por envío', async () => {
@@ -550,6 +550,28 @@ describe('Tabla de envíos', () => {
       await esperar();
       expect(alerta.confirmar).toHaveBeenCalled();
       expect(data.envios().find((x) => x.id === e.id)!.estado).toBe('Cancelado');
+    });
+  });
+
+  describe('ver el QR en pantalla', () => {
+    it('el cliente puede mostrar el QR de un envío que sigue su camino, y el superadmin no ve ese botón', async () => {
+      const c = await clienteConSesion();
+      const e = data.crearEnvio({ ...entrega, retiro: 'domicilio' }, c.id);
+      const componentInstance: { envio?: Envio } = {};
+      abrirModal.mockReturnValue({ componentInstance, result: Promise.resolve(undefined) });
+      const { botones, titulos } = tabla();
+      expect(titulos()).toContain('Ver código QR');
+      botones().find((b) => b.title === 'Ver código QR')!.click();
+      await esperar();
+      expect(componentInstance.envio).toMatchObject({ id: e.id });
+      expect(abrirModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('un envío cancelado o entregado ya no ofrece el QR', async () => {
+      const c = await clienteConSesion();
+      const e = data.crearEnvio(entrega, c.id);
+      data.cancelarEnvio(e.id, c.id);
+      expect(tabla().titulos()).not.toContain('Ver código QR');
     });
   });
 });

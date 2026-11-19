@@ -1,9 +1,10 @@
+import { generarCodigo } from '../codigo-envio';
 import { DB } from '../models';
 import { createSeed } from './seed';
 
 // La clave nunca cambia: si el modelo de datos cambia se sube VERSION_ESQUEMA y se agrega una migración, así no se pierden los datos guardados.
 export const CLAVE_DATOS = 'flexya-datos';
-export const VERSION_ESQUEMA = 7;
+export const VERSION_ESQUEMA = 8;
 
 const CLAVES_ANTERIORES = ['flexya-demo-v10', 'flexya-demo-v9'];
 const PREFIJO_RESPALDO = 'flexya-respaldo-';
@@ -41,6 +42,18 @@ const MIGRACIONES: Record<number, Migracion> = {
     ...db,
     envios: (Array.isArray(db['envios']) ? (db['envios'] as Record<string, unknown>[]) : []).map((e) => ({ retiroProgramado: false, franja: null, ...e })),
   }),
+  8: (db) => {
+    const usados = new Set<string>();
+    return {
+      ...db,
+      envios: (Array.isArray(db['envios']) ? (db['envios'] as Record<string, unknown>[]) : []).map((e) => {
+        const previo = typeof e['codigo'] === 'string' && e['codigo'] && !usados.has(e['codigo'] as string) ? (e['codigo'] as string) : null;
+        const codigo = previo ?? generarCodigo(usados);
+        usados.add(codigo);
+        return { ...e, codigo };
+      }),
+    };
+  },
 };
 
 function migrar(db: Record<string, unknown>, desde: number): Record<string, unknown> {

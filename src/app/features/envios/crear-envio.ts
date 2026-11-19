@@ -6,6 +6,7 @@ import { AlertService } from '../../core/services/alert.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService, StockInsuficienteError } from '../../core/services/data.service';
 import { EnvioModal } from './envio-modal';
+import { EtiquetasModal } from './etiquetas-modal';
 import { RetiroModal } from './retiro-modal';
 
 const OPCIONES = {
@@ -42,8 +43,20 @@ export class CrearEnvio {
           const mensaje = pedido.borrador
             ? creados.length > 1 ? `Retiro ${primero.retiroId} guardado como borrador: ${creados.length} envíos` : `Borrador ${primero.id} guardado`
             : creados.length > 1 ? `Retiro ${primero.retiroId} listo: ${creados.length} envíos` : `Envío ${primero.id} creado correctamente`;
-          this.alert.exito(mensaje);
           void this.router.navigate(['/cliente/envios']);
+          if (pedido.borrador) {
+            this.alert.exito(mensaje);
+            return;
+          }
+          void this.alert
+            .exitoConAccion({
+              titulo: mensaje,
+              mensaje: 'Pegá la etiqueta en el paquete antes del retiro. Si no tenés impresora, desde tu lista de envíos podés mostrar el QR en la pantalla del celular.',
+              accion: creados.length > 1 ? 'Imprimir etiquetas' : 'Imprimir etiqueta',
+            })
+            .then((imprimir) => {
+              if (imprimir) this.ofrecerEtiquetas(creados);
+            });
         } catch (e) {
           if (!(e instanceof StockInsuficienteError)) throw e;
           this.alert.advertencia(`No hay stock suficiente. ${e.message}`);
@@ -51,6 +64,14 @@ export class CrearEnvio {
       },
       () => undefined,
     );
+  }
+
+  /** Si la persona elige imprimir al terminar de crear el envío, se muestran sus etiquetas. */
+  private ofrecerEtiquetas(creados: Envio[]) {
+    const ref = this.modals.open(EtiquetasModal, { centered: true, scrollable: true, size: 'lg', modalDialogClass: 'fx-modal', backdropClass: 'fx-backdrop' });
+    ref.componentInstance.envios = creados;
+    ref.componentInstance.titulo = creados.length > 1 ? `Retiro ${creados[0].retiroId} listo: ${creados.length} etiquetas` : `Envío ${creados[0].id} creado`;
+    ref.result.then(() => undefined, () => undefined);
   }
 
   editar(envio: Envio) {

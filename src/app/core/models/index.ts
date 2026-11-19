@@ -184,6 +184,18 @@ export interface Envio {
   motivoIncidencia?: string;
   devolucionEntregadaEn?: string;
   entregadoEnDepositoEn?: string;
+  /** Código no adivinable que va en el QR de la etiqueta (el número LF-… queda para leerlo y buscarlo). */
+  codigo: string;
+  escaneos?: EscaneoEnvio[];
+}
+
+/** Cada vez que alguien abre el envío escaneando su QR queda registrado, también los intentos rechazados. */
+export interface EscaneoEnvio {
+  fecha: string;
+  usuarioId: string;
+  rol: Rol;
+  resultado: 'ok' | 'rechazado';
+  accion: string;
 }
 
 export interface HitoEnvio {

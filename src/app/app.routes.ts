@@ -6,6 +6,8 @@ const dashboard = () => import('./features/dashboard/dashboard').then((m) => m.D
 const envios = () => import('./features/envios/envios-list').then((m) => m.EnviosList);
 const misParadas = () => import('./features/mensajero/mis-paradas').then((m) => m.MisParadas);
 const entregaDetalle = () => import('./features/mensajero/entrega-detalle').then((m) => m.EntregaDetalle);
+const escaner = () => import('./features/escaneo/escaner').then((m) => m.Escaner);
+const envioEscaneado = () => import('./features/escaneo/envio-escaneado').then((m) => m.EnvioEscaneado);
 const cuenta = () => import('./features/auth/cuenta').then((m) => m.Cuenta);
 const productos = () => import('./features/productos/productos').then((m) => m.Productos);
 const deposito = () => import('./features/deposito/deposito').then((m) => m.Deposito);
@@ -54,6 +56,7 @@ export const routes: Routes = [
     component: Shell,
     canActivate: [authGuard],
     children: [
+      { path: 'e/:codigo', loadComponent: envioEscaneado },
       {
         path: 'admin',
         canActivate: [roleGuard],
@@ -62,6 +65,7 @@ export const routes: Routes = [
           { path: '', pathMatch: 'full', redirectTo: 'inicio' },
           { path: 'inicio', loadComponent: dashboard },
           { path: 'cuenta', loadComponent: cuenta },
+          { path: 'escanear', loadComponent: escaner },
           { path: 'envios', loadComponent: envios },
           { path: 'deposito', loadComponent: deposito },
           { path: 'clientes', loadComponent: clientes },
@@ -92,6 +96,7 @@ export const routes: Routes = [
           { path: '', pathMatch: 'full', redirectTo: 'inicio' },
           { path: 'inicio', loadComponent: dashboard },
           { path: 'cuenta', loadComponent: cuenta },
+          { path: 'escanear', loadComponent: escaner },
           { path: 'envios', loadComponent: misParadas },
           { path: 'envios/:id', loadComponent: entregaDetalle },
           { path: 'ganancias', loadComponent: ganancias },
